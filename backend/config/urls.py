@@ -8,10 +8,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 # pyrefly: ignore [missing-import]
-from common.views import api_root_view
+from common.views import api_root_view, health_check_view
 
 urlpatterns = [
     path("", api_root_view, name="api-root"),
+    path("api/health/", health_check_view, name="health-check"),
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
     path("api/business/", include("businesses.urls")),
@@ -19,6 +20,7 @@ urlpatterns = [
     path("api/transactions/", include("ledger.urls")),
     path("api/dashboard/", include("reports.urls")),
 ]
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

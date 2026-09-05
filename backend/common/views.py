@@ -43,6 +43,7 @@ def api_root_view(request):
 
         <div class="endpoints">
             <h3>Active API Endpoints</h3>
+            <div class="endpoint-item"><span>/api/health/</span> <span class="method">GET (Health Check)</span></div>
             <div class="endpoint-item"><span>/api/auth/</span> <span class="method">POST / GET</span></div>
             <div class="endpoint-item"><span>/api/customers/</span> <span class="method">GET / POST</span></div>
             <div class="endpoint-item"><span>/api/transactions/</span> <span class="method">GET / POST</span></div>
@@ -53,3 +54,14 @@ def api_root_view(request):
 </body>
 </html>"""
     return HttpResponse(html)
+
+
+def health_check_view(request):
+    """API health check endpoint for monitoring and uptime probes."""
+    from django.http import JsonResponse
+    return JsonResponse({
+        "status": "ok",
+        "service": "HisabPoint Digital Ledger API",
+        "version": "1.0.0"
+    })
+
