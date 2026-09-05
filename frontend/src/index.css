@@ -1,0 +1,312 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600&display=swap');
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #190e0a;
+    background-image: 
+      radial-gradient(ellipse at 50% 20%, rgba(45, 28, 18, 0.8), rgba(15, 8, 5, 0.98)),
+      linear-gradient(to bottom, #24140d, #120905);
+    color: #2b1208;
+    min-height: 100dvh;
+  }
+
+  /* Skeuomorphic Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #e6d8bf;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.15);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to right, #1b3b2b, #0e2218);
+    border-radius: 4px;
+    border: 1px solid #d4af37;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+}
+
+@layer components {
+  /* ── Skeuomorphic Buttons ───────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-bold rounded-xl
+           transition-all duration-100 focus:outline-none select-none cursor-pointer;
+  }
+
+  .btn-forest {
+    @apply btn text-white px-6 py-3.5 text-sm min-h-[48px] font-bold;
+    background-image: linear-gradient(to bottom, #2b563f, #1b3b2b, #11281d);
+    border: 1px solid #d4af37;
+    box-shadow: 0 5px 0 #09150f, 0 8px 16px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.4);
+  }
+  .btn-forest:hover {
+    background-image: linear-gradient(to bottom, #32644a, #204533, #153023);
+  }
+  .btn-forest:active {
+    transform: translateY(4px);
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.3);
+  }
+
+  .btn-parchment-bevel {
+    @apply btn px-6 py-3.5 text-sm min-h-[48px] font-bold text-forest-900;
+    background-image: linear-gradient(to bottom, #fffdf7, #f5efe1, #e6dac3);
+    border: 1.5px solid #c9b48c;
+    box-shadow: 0 4px 0 #9e8964, 0 6px 12px rgba(0,0,0,0.25), inset 0 1px 0 #ffffff;
+  }
+  .btn-parchment-bevel:hover {
+    background-image: linear-gradient(to bottom, #ffffff, #f9f5eb, #ede1cc);
+  }
+  .btn-parchment-bevel:active {
+    transform: translateY(3px);
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2), inset -2px -2px 4px rgba(255,255,255,0.8);
+  }
+
+  .btn-primary {
+    @apply btn text-white px-5 py-3 text-sm min-h-[48px];
+    background-image: linear-gradient(to bottom, #92400e, #7e351b, #2b1208);
+    border: 1px solid rgba(217, 119, 6, 0.5);
+    box-shadow: 0 6px 0 #190a04, 0 10px 15px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .btn-primary:active {
+    transform: translateY(4px);
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.7);
+  }
+
+  .btn-gold {
+    @apply btn px-5 py-3 text-sm min-h-[48px] font-black;
+    color: #190a04;
+    background-image: linear-gradient(to bottom, #fde68a, #f3d068, #b38f24);
+    border: 1px solid #fde68a;
+    box-shadow: 0 4px 0 #785a15, 0 6px 12px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.7);
+  }
+  .btn-gold:active {
+    transform: translateY(4px);
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.7);
+  }
+
+  .btn-green {
+    @apply btn text-white font-black px-5 py-3 text-sm min-h-[48px];
+    background-image: linear-gradient(to bottom, #10b981, #059669, #065f46);
+    border: 1px solid rgba(52, 211, 153, 0.6);
+    box-shadow: 0 4px 0 #0f4022, 0 6px 12px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.5);
+  }
+  .btn-green:active {
+    transform: translateY(4px);
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.7);
+  }
+
+  .btn-danger {
+    @apply btn text-white font-black px-5 py-3 text-sm min-h-[48px];
+    background-image: linear-gradient(to bottom, #e11d48, #be123c, #881337);
+    border: 1px solid rgba(251, 113, 133, 0.5);
+    box-shadow: 0 4px 0 #6b0c20, 0 6px 12px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.5);
+  }
+  .btn-danger:active {
+    transform: translateY(4px);
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.7);
+  }
+
+  .btn-secondary {
+    @apply btn font-bold px-5 py-3 text-sm min-h-[48px];
+    color: #2b1208;
+    background-image: linear-gradient(to bottom, #fffdf7, #f4ebd7);
+    border: 1px solid #e7d8bd;
+    box-shadow: 0 8px 20px -4px rgba(43, 18, 8, 0.2), 0 2px 4px -1px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+  .btn-secondary:active {
+    transform: translateY(2px);
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.7);
+  }
+
+  /* ── Skeuomorphic Pressed Inset Input Fields ─────────── */
+  .input {
+    @apply w-full rounded-2xl px-4 py-3.5 text-sm transition-all duration-150 min-h-[48px];
+    color: #1c1917;
+    background-color: #fffdf7;
+    border: 1px solid #e7d8bd;
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.7);
+  }
+  .input:focus {
+    outline: none;
+    border-color: #d4af37;
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25), 0 0 0 2px #d4af37;
+  }
+
+  /* Override browser autofill blue/white background to match parchment input */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus, 
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #fffdf7 inset !important;
+    -webkit-text-fill-color: #1c1917 !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .input-amount {
+    @apply input text-3xl font-black text-center tracking-tight;
+    color: #1e3a8a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Skeuomorphic Card / Parchment Sheet ──────────────── */
+  .card {
+    background-color: #fffdf7;
+    border-radius: 1rem;
+    border: 1px solid #e7d8bd;
+    box-shadow: 0 8px 20px -4px rgba(43, 18, 8, 0.2), 0 2px 4px -1px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+    position: relative;
+  }
+
+  .card-leather {
+    background-image: linear-gradient(to bottom, #234734, #183325, #0f2319);
+    color: #ffffff;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Leather Stitch Border Utility */
+  .leather-stitch {
+    outline: 2px dashed rgba(212, 175, 55, 0.45);
+    outline-offset: -6px;
+  }
+
+  /* Embossed Gold Typography */
+  .gold-emboss {
+    background: linear-gradient(to bottom, #fff2be, #d4af37, #997415);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9));
+  }
+
+  /* ── Stamp Badges ───────────────────────────────────── */
+  .badge-due {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-black
+           bg-rose-100 text-rose-800 border border-rose-400 transform -rotate-1 shadow-sm;
+  }
+
+  .badge-settled {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-black
+           bg-emerald-100 text-emerald-800 border border-emerald-400 transform rotate-1 shadow-sm;
+  }
+
+  /* ── Bottom Nav ─────────────────────────────────────── */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 border-t-2 border-gold-500/50 flex items-center justify-around px-2 z-40 shadow-2xl;
+    background-image: linear-gradient(to top, #190a04, #2b1208, #190a04);
+    padding-bottom: env(safe-area-inset-bottom);
+    height: 68px;
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl
+           text-amber-200/70 transition-all duration-150 text-xs font-bold
+           min-w-[60px] hover:text-gold-400;
+  }
+
+  .nav-item-active {
+    @apply text-gold-400 font-black scale-105;
+  }
+}
+
+@layer utilities {
+  .font-tabular {
+    font-family: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .font-amount {
+    font-family: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+
+  .skeuo-text-emboss {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.3);
+  }
+
+  .skeuo-text-deboss {
+    text-shadow: 0 -1px 1px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.5);
+  }
+
+  /* Skeuomorphic Paper Horizontal Lines */
+  .bg-paper-lines {
+    background-image: linear-gradient(transparent 27px, rgba(180, 160, 130, 0.25) 28px);
+    background-size: 100% 28px;
+  }
+
+  /* Dark Wood Desk Surface */
+  .bg-wood-desk {
+    background-color: #170d08;
+    background-image: 
+      radial-gradient(circle at 50% 30%, rgba(60, 36, 22, 0.6) 0%, rgba(18, 10, 6, 0.95) 85%),
+      linear-gradient(135deg, rgba(30, 16, 9, 0.5) 0%, rgba(10, 5, 3, 0.8) 100%);
+  }
+
+  /* Rubber Stamp Red Circular Border */
+  .stamp-red {
+    border: 2px dashed #b91c1c;
+    color: #b91c1c;
+    text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    border-radius: 50%;
+    transform: rotate(-12deg);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15), inset 0 0 0 1px rgba(185, 28, 28, 0.3);
+  }
+
+  /* Fountain Pen Shadow */
+  .pen-shadow {
+    filter: drop-shadow(4px 12px 10px rgba(0,0,0,0.6));
+  }
+
+  /* Desk Calculator Button 3D Effect */
+  .calc-key {
+    background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+    box-shadow: 0 3px 0 #111827, inset 0 1px 0 rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: #e5e7eb;
+    font-weight: 700;
+    text-align: center;
+    transition: all 0.1s ease;
+  }
+  .calc-key:active {
+    transform: translateY(2px);
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5);
+  }
+}

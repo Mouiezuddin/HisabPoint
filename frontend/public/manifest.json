@@ -1,0 +1,16 @@
+{
+  "name": "HisabPoint Digital Ledger",
+  "short_name": "HisabPoint",
+  "description": "Digital customer ledger for local shopkeepers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f225d",
+  "theme_color": "#282c74",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

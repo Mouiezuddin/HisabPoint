@@ -1,0 +1,14 @@
+project_roots = ["backend", "."]
+project-roots = ["backend", "."]
+search_paths = [
+    "backend",
+    "backend/venv/Lib/site-packages"
+]
+search-paths = [
+    "backend",
+    "backend/venv/Lib/site-packages"
+]
+python_executable = "backend/venv/Scripts/python.exe"
+python-executable = "backend/venv/Scripts/python.exe"
+python_environment = "backend/venv"
+python-environment = "backend/venv"

@@ -1,0 +1,18 @@
+[project]
+name = "digital-ledger"
+version = "1.0.0"
+
+[tool.pyright]
+venvPath = "backend"
+venv = "venv"
+extraPaths = [
+    "backend",
+    "backend/venv/Lib/site-packages"
+]
+
+[tool.pyrefly]
+project_roots = ["backend"]
+search_paths = [
+    "backend",
+    "backend/venv/Lib/site-packages"
+]

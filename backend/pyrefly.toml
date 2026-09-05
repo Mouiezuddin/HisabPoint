@@ -1,0 +1,14 @@
+project_roots = ["."]
+project-roots = ["."]
+search_paths = [
+    ".",
+    "venv/Lib/site-packages"
+]
+search-paths = [
+    ".",
+    "venv/Lib/site-packages"
+]
+python_executable = "venv/Scripts/python.exe"
+python-executable = "venv/Scripts/python.exe"
+python_environment = "venv"
+python-environment = "venv"
