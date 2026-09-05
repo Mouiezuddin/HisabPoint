@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Transaction } from '../../types';
 import { customerService } from '../../services/customer.service';
 import { ledgerService } from '../../services/ledger.service';
+import { useAuth } from '../../features/auth/AuthContext';
 import { LoadingState, ErrorState, EmptyState } from '../../components/ui/LedgerComponents';
 import { ConfirmDialog } from '../../components/ui/Modal';
 import { showToast } from '../../components/ui/Toast';
@@ -16,6 +17,7 @@ export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [filterType, setFilterType] = useState<'all' | 'credit' | 'payment'>('all');
   const [quickTxnModal, setQuickTxnModal] = useState<{ open: boolean; type?: 'credit' | 'payment' }>({ open: false });
@@ -259,6 +261,7 @@ export function CustomerDetailPage() {
         customerName={customer.name}
         customerPhone={customer.phone}
         dueAmount={customer.balance}
+        shopName={user?.name || 'HisabPoint Ledger'}
       />
 
       {/* Dynamic UPI QR Code Modal */}

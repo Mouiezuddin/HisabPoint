@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { showToast } from './Toast';
 
@@ -17,17 +17,30 @@ export function WhatsAppReminderModal({
   customerName,
   customerPhone,
   dueAmount,
-  shopName = 'ABC General Store',
+  shopName = 'HisabPoint Ledger',
 }: WhatsAppReminderModalProps) {
-  const defaultMessage = `Namaste ${customerName} ji, your pending balance at ${shopName} is ₹${dueAmount}. Kindly settle at your convenience via UPI/Cash. Thank you!`;
-  const [message, setMessage] = useState(defaultMessage);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      const defaultMessage = `Namaste ${customerName} ji, your pending balance at ${shopName} is ₹${dueAmount}. Kindly settle at your convenience via UPI or Cash. Thank you!`;
+      setMessage(defaultMessage);
+    }
+  }, [isOpen, customerName, dueAmount, shopName]);
+
+  const cleanPhone = (customerPhone || '').replace(/\D/g, '');
+  const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+  const whatsappUrl = phoneWithCountry
+    ? `https://api.whatsapp.com/send?phone=${phoneWithCountry}&text=${encodeURIComponent(message)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
 
   function handleSendWhatsApp() {
-    const cleanPhone = customerPhone.replace(/\D/g, '');
-    const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-    const url = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-    showToast('Opening WhatsApp…', 'info');
+    if (!cleanPhone) {
+      showToast('No phone number saved for customer. Opening WhatsApp chat window…', 'info');
+    } else {
+      showToast('Opening WhatsApp…', 'info');
+    }
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     onClose();
   }
 
@@ -43,7 +56,7 @@ export function WhatsAppReminderModal({
           <div>
             <span className="font-bold text-stone-700 font-serif">Customer: </span>
             <span className="font-bold text-stone-900">{customerName}</span>
-            <p className="text-stone-500 font-mono text-[11px]">📞 {customerPhone || 'No phone number'}</p>
+            <p className="text-stone-500 font-mono text-[11px]">📞 {customerPhone || 'No phone number saved'}</p>
           </div>
           <div className="text-right">
             <span className="text-[10px] font-bold text-stone-500 uppercase">Amount Due</span>
@@ -68,20 +81,27 @@ export function WhatsAppReminderModal({
           <button
             type="button"
             onClick={handleCopyText}
-            className="flex-1 py-2.5 bg-parchment-200 hover:bg-parchment-300 text-stone-800 font-bold text-xs rounded-xl border border-parchment-300"
+            className="flex-1 py-2.5 bg-parchment-200 hover:bg-parchment-300 text-stone-800 font-bold text-xs rounded-xl border border-parchment-300 transition-colors"
           >
             📋 Copy Text
           </button>
 
-          <button
-            type="button"
-            onClick={handleSendWhatsApp}
-            className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5"
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              showToast('Opening WhatsApp…', 'info');
+              onClose();
+            }}
+            className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-colors text-center"
+            id="btn-send-whatsapp-link"
           >
-            <span>💬 Send WhatsApp</span>
-          </button>
+            <span>💬 Open WhatsApp</span>
+          </a>
         </div>
       </div>
     </Modal>
   );
 }
+
