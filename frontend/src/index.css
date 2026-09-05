@@ -39,6 +39,31 @@
     min-height: 100dvh;
   }
 
+  /* High-Contrast Day Sunlight Theme Overrides */
+  body.light-theme {
+    background-color: #f7f3eb !important;
+    background-image: 
+      radial-gradient(ellipse at 50% 10%, #ffffff, #f4eee2),
+      linear-gradient(to bottom, #f9f5ed, #ede4d3) !important;
+    color: #1c1917 !important;
+  }
+
+  .light-theme .bg-wood-desk {
+    background: #f3ede2 !important;
+  }
+
+  .light-theme .bg-parchment-50 {
+    background-color: #ffffff !important;
+  }
+
+  .light-theme .bg-parchment-100 {
+    background-color: #faf7f2 !important;
+  }
+
+  .light-theme .border-parchment-300 {
+    border-color: #d6c7b0 !important;
+  }
+
   /* Skeuomorphic Scrollbar */
   ::-webkit-scrollbar {
     width: 8px;

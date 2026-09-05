@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { DesktopHeader } from './DesktopHeader';
 import { QuickTransactionModal } from '../ui/QuickTransactionModal';
 import { useAuth } from '../../features/auth/AuthContext';
+import { useTheme } from '../../features/theme/ThemeContext';
 
 const mobileNavItems = [
   {
@@ -113,6 +114,7 @@ export function BottomNav({ onOpenNewEntry }: { onOpenNewEntry: () => void }) {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [quickTxnOpen, setQuickTxnOpen] = useState(false);
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   return (
@@ -134,15 +136,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
 
-          <button
-            onClick={() => navigate('/settings')}
-            className="flex items-center gap-2 bg-forest-900/90 border border-gold-500/50 px-3 py-1 rounded-full text-xs font-bold text-gold-300"
-          >
-            <span>{user?.name?.split(' ')[0] || 'Shop'}</span>
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-forest-950 text-[10px] font-black flex items-center justify-center font-serif">
-              {user?.name?.charAt(0).toUpperCase() || 'S'}
-            </div>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 bg-forest-900/90 border border-gold-500/50 rounded-full text-xs font-bold text-gold-300"
+              title={theme === 'dark' ? 'Day Sunlight Mode' : 'Night Mode'}
+              id="btn-theme-toggle-mobile"
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+
+            <button
+              onClick={() => navigate('/settings')}
+              className="flex items-center gap-2 bg-forest-900/90 border border-gold-500/50 px-3 py-1 rounded-full text-xs font-bold text-gold-300"
+            >
+              <span>{user?.name?.split(' ')[0] || 'Shop'}</span>
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-forest-950 text-[10px] font-black flex items-center justify-center font-serif">
+                {user?.name?.charAt(0).toUpperCase() || 'S'}
+              </div>
+            </button>
+          </div>
         </header>
 
         {/* Main Content Body */}

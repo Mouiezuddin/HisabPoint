@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
+import { useTheme } from '../../features/theme/ThemeContext';
 
 interface DesktopHeaderProps {
   onOpenNewEntry?: () => void;
@@ -8,6 +9,7 @@ interface DesktopHeaderProps {
 
 export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,7 +33,7 @@ export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
         </p>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {/* Search Input Trigger */}
         <div
           onClick={() => navigate('/customers')}
@@ -42,6 +44,16 @@ export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
           </svg>
           <span>Search customer in ledger...</span>
         </div>
+
+        {/* 1-Click Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to Day Sunlight Mode' : 'Switch to Royal Night Mode'}
+          className="p-2.5 bg-parchment-50 border border-parchment-300 rounded-2xl shadow-sm hover:border-amber-600 transition-all text-xs font-bold flex items-center justify-center cursor-pointer"
+          id="btn-theme-toggle-desktop"
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
 
         {/* 3D Tactile Action Button */}
         <button
@@ -75,3 +87,4 @@ export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
     </header>
   );
 }
+

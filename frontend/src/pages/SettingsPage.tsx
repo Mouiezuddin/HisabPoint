@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
+import { useTheme } from '../features/theme/ThemeContext';
 import { ConfirmDialog } from '../components/ui/Modal';
 import { showToast } from '../components/ui/Toast';
 
 export function SettingsPage() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [showLogout, setShowLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -66,6 +68,15 @@ export function SettingsPage() {
           onClick={() => navigate('/settings/business')}
         />
         <SettingsRow
+          icon={theme === 'dark' ? '☀️' : '🌙'}
+          title={`Appearance (${theme === 'dark' ? 'Royal Dark' : 'Day Sunlight'})`}
+          subtitle="Click to switch between Day Sunlight & Royal Night mode"
+          onClick={() => {
+            toggleTheme();
+            showToast(`Switched to ${theme === 'dark' ? 'Day Sunlight' : 'Royal Night'} mode`, 'success');
+          }}
+        />
+        <SettingsRow
           icon="👤"
           title="Profile & Account"
           subtitle="Manage personal contact and login options"
@@ -96,6 +107,7 @@ export function SettingsPage() {
           onClick={() => showToast('HisabPoint Support: support@hisabpoint.com', 'info')}
         />
       </div>
+
 
       <ConfirmDialog
         isOpen={showLogout}
