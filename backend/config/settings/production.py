@@ -4,18 +4,22 @@ from decouple import config
 
 DEBUG = False
 
+import dj_database_url
+
 # PostgreSQL
+db_default_url = (
+    f"postgresql://{config('DB_USER', default='neondb_owner')}:{config('DB_PASSWORD', default='')}@"
+    f"{config('DB_HOST', default='localhost')}:{config('DB_PORT', default='5432')}/{config('DB_NAME', default='neondb')}"
+)
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-        "CONN_MAX_AGE": 60,
-    }
+    "default": dj_database_url.config(
+        default=config("DATABASE_URL", default=db_default_url),
+        conn_max_age=60,
+        ssl_require=True,
+    )
 }
+
 
 # Security headers
 SECURE_BROWSER_XSS_FILTER = True
