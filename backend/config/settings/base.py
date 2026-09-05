@@ -143,10 +143,16 @@ SIMPLE_JWT = {
 }
 
 # CORS
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:5173",
-).split(",")
+cors_origins_raw = config("CORS_ALLOWED_ORIGINS", default="http://localhost:5173")
+if cors_origins_raw.strip() == "*":
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip() and o.strip() != "*"]
+    if origins:
+        CORS_ALLOWED_ORIGINS = origins
+    else:
+        CORS_ALLOW_ALL_ORIGINS = True
+
 CORS_ALLOW_CREDENTIALS = True
 
 # Email
