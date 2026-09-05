@@ -89,8 +89,19 @@ export function CustomerDetailPage() {
       <div className="bg-parchment-50 rounded-2xl p-6 border-2 border-parchment-300 shadow-md space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black font-serif text-stone-900 tracking-tight">{customer.name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-black font-serif text-stone-900 tracking-tight">{customer.name}</h1>
+              <button
+                onClick={() => navigate(`/customers/${id}/edit`)}
+                className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3 py-1 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
+                title="Edit Customer Details"
+                id="btn-edit-customer-header"
+              >
+                <span>✏️ Edit Details</span>
+              </button>
+            </div>
             <p className="text-xs font-mono text-stone-600 mt-0.5">📞 {customer.phone || 'No phone number'}</p>
+            {customer.address && <p className="text-xs text-stone-500 mt-0.5">📍 {customer.address}</p>}
           </div>
 
           <div className="flex flex-col sm:items-end">
@@ -109,6 +120,12 @@ export function CustomerDetailPage() {
         {/* Quick Tools & Action Buttons Row */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-parchment-300">
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/customers/${id}/edit`)}
+              className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3.5 py-2 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-1.5"
+            >
+              <span>✏️ Edit Info</span>
+            </button>
             <button
               onClick={() => setShowWhatsAppModal(true)}
               className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
