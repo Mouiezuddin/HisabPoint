@@ -36,6 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await authService.login(email, password);
+    if (res.access) {
+      localStorage.setItem('ledger_access_token', res.access);
+    }
+    if (res.refresh) {
+      localStorage.setItem('ledger_refresh_token', res.refresh);
+    }
     if (res.user) {
       setUser(res.user);
     }
@@ -44,6 +50,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(async (data: { email: string; name: string; phone?: string; password: string; password2: string }) => {
     const result = await authService.register(data);
+    if (result.access) {
+      localStorage.setItem('ledger_access_token', result.access);
+    }
+    if (result.refresh) {
+      localStorage.setItem('ledger_refresh_token', result.refresh);
+    }
     if (result.user) {
       setUser(result.user);
     }

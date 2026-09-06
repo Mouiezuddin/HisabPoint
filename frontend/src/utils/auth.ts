@@ -5,9 +5,10 @@
  */
 
 export function clearTokens(): void {
-  // Legacy cleanup if any tokens exist in localStorage
   try {
     localStorage.removeItem('ledger_tokens');
+    localStorage.removeItem('ledger_access_token');
+    localStorage.removeItem('ledger_refresh_token');
   } catch {
     // Ignore
   }

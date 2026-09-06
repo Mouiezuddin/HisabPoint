@@ -13,12 +13,20 @@ from common.views import api_root_view, health_check_view
 urlpatterns = [
     path("", api_root_view, name="api-root"),
     path("api/health/", health_check_view, name="health-check"),
+    path("health/", health_check_view, name="health-check-short"),
     path("admin/", admin.site.urls),
+    # Standard endpoints with /api/ prefix
     path("api/auth/", include("accounts.urls")),
     path("api/business/", include("businesses.urls")),
     path("api/customers/", include("customers.urls")),
     path("api/transactions/", include("ledger.urls")),
     path("api/dashboard/", include("reports.urls")),
+    # Direct fallback endpoints without /api/ prefix
+    path("auth/", include("accounts.urls")),
+    path("business/", include("businesses.urls")),
+    path("customers/", include("customers.urls")),
+    path("transactions/", include("ledger.urls")),
+    path("dashboard/", include("reports.urls")),
 ]
 
 

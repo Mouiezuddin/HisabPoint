@@ -63,7 +63,7 @@ class EmailVerificationRateThrottle(UserRateThrottle):
 def set_jwt_cookies(response, access_token, refresh_token=None):
     """Attach access and refresh tokens as HttpOnly, Secure, SameSite cookies."""
     secure = not settings.DEBUG
-    samesite = "Lax"
+    samesite = "None" if secure else "Lax"
 
     access_lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
     max_age_access = int(access_lifetime.total_seconds()) if access_lifetime else 900
@@ -95,8 +95,10 @@ def set_jwt_cookies(response, access_token, refresh_token=None):
 
 def clear_jwt_cookies(response):
     """Remove authentication cookies."""
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/")
+    secure = not settings.DEBUG
+    samesite = "None" if secure else "Lax"
+    response.delete_cookie("access_token", path="/", samesite=samesite)
+    response.delete_cookie("refresh_token", path="/", samesite=samesite)
     return response
 
 

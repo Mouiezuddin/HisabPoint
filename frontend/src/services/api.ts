@@ -1,14 +1,28 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+let rawBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').trim();
+if (rawBaseUrl.endsWith('/')) {
+  rawBaseUrl = rawBaseUrl.slice(0, -1);
+}
+// Automatically ensure /api endpoint suffix is present
+const BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl}/api`;
 
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Enables browser to automatically send and receive HttpOnly cookies
+  withCredentials: true, // Enables browser to send and receive HttpOnly cookies
   timeout: 15000,
+});
+
+// Attach Bearer token if present (supports cross-domain deployments where 3rd-party cookies might be blocked)
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('ledger_access_token');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 let isRefreshing = false;
@@ -48,14 +62,23 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post(
+        const refreshPayload: Record<string, string> = {};
+        const localRefresh = localStorage.getItem('ledger_refresh_token');
+        if (localRefresh) refreshPayload.refresh = localRefresh;
+
+        const refreshRes = await axios.post(
           `${BASE_URL}/auth/token/refresh/`,
-          {},
+          refreshPayload,
           { withCredentials: true }
         );
+        if (refreshRes.data?.access) {
+          localStorage.setItem('ledger_access_token', refreshRes.data.access);
+        }
         processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
+        localStorage.removeItem('ledger_access_token');
+        localStorage.removeItem('ledger_refresh_token');
         processQueue(refreshError);
         return Promise.reject(refreshError);
       } finally {
