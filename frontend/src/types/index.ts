@@ -68,6 +68,14 @@ export interface DashboardData {
   today_given: string;
   today_received: string;
   total_customers: number;
+  total_given?: string;
+  total_received?: string;
+  total_transactions?: number;
+  daily_summary?: Array<{
+    date: string;
+    given: number;
+    received: number;
+  }>;
   this_month_sales?: string;
   weekly_breakdown?: Array<{
     week: string;

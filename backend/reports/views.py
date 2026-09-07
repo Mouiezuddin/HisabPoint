@@ -102,12 +102,38 @@ def dashboard_view(request):
 
     customers_with_due.sort(key=lambda c: Decimal(c["balance"]), reverse=True)
 
+    # All transactions for this user
+    all_txns = Transaction.objects.filter(
+        customer__user=user,
+        customer__status=CustomerStatus.ACTIVE,
+    )
+    total_given = calculate_net_amount(all_txns, TransactionType.CREDIT)
+    total_received = calculate_net_amount(all_txns, TransactionType.PAYMENT)
+    total_transactions = all_txns.exclude(type=TransactionType.REVERSAL).count()
+
+    # Daily summary for the last 7 days
+    daily_summary = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        day_txns = all_txns.filter(transaction_date=day)
+        d_given = calculate_net_amount(day_txns, TransactionType.CREDIT)
+        d_received = calculate_net_amount(day_txns, TransactionType.PAYMENT)
+        daily_summary.append({
+            "date": day.strftime("%d %b"),
+            "given": float(d_given),
+            "received": float(d_received),
+        })
+
     return Response(
         {
             "total_due": f"{total_due:.2f}",
             "today_given": f"{today_given:.2f}",
             "today_received": f"{today_received:.2f}",
             "total_customers": total_customers,
+            "total_given": f"{total_given:.2f}",
+            "total_received": f"{total_received:.2f}",
+            "total_transactions": total_transactions,
+            "daily_summary": daily_summary,
             "this_month_sales": f"{this_month_sales:.2f}",
             "weekly_breakdown": [
                 {"week": "Week 1", "amount": f"{week1_sales:.2f}"},

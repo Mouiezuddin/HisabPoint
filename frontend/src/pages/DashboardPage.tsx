@@ -52,10 +52,10 @@ export function DashboardPage() {
             <span className="text-xs">📖</span>
           </div>
           <p className="text-3xl font-black font-serif text-rose-800 font-tabular">
-            {formatCurrency(dashboard?.total_due ?? '84500')}
+            {formatCurrency(dashboard?.total_due ?? '0.00')}
           </p>
           <p className="text-xs text-stone-600 font-medium">
-            Across {dashboard?.customers_with_due?.length || 27} customers
+            Across {dashboard?.customers_with_due?.length ?? 0} customers
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export function DashboardPage() {
             <span className="text-xs">📤</span>
           </div>
           <p className="text-3xl font-black font-serif text-rose-800 font-tabular">
-            {formatCurrency(dashboard?.today_given ?? '4200')}
+            {formatCurrency(dashboard?.today_given ?? '0.00')}
           </p>
           <p className="text-xs text-rose-700 font-medium">Credit given today</p>
         </div>
@@ -78,7 +78,7 @@ export function DashboardPage() {
             <span className="text-xs">📥</span>
           </div>
           <p className="text-3xl font-black font-serif text-emerald-800 font-tabular">
-            {formatCurrency(dashboard?.today_received ?? '2800')}
+            {formatCurrency(dashboard?.today_received ?? '0.00')}
           </p>
           <p className="text-xs text-emerald-700 font-medium">Payment received today</p>
         </div>

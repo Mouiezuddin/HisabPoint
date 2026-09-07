@@ -15,7 +15,7 @@ export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
 
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path === '/' || path === '/dashboard') return `Good evening, ${user?.name?.split(' ')[0] || 'Mouleuddin'}`;
+    if (path === '/' || path === '/dashboard') return `Good evening, ${user?.name?.split(' ')[0] || 'Shopkeeper'}`;
     if (path.startsWith('/customers/new')) return 'Add New Customer Record';
     if (path.startsWith('/customers')) return 'Customers Directory & Ledger';
     if (path.startsWith('/activity')) return 'Shop Activity Logbook';

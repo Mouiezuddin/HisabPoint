@@ -29,16 +29,18 @@ export function SettingsPage() {
       {/* Title */}
       <h1 className="text-2xl sm:text-3xl font-black font-serif text-stone-900 tracking-tight">Settings</h1>
 
-      {/* User Profile Card matching Screen 18 */}
+      {/* User Profile Card */}
       <div className="bg-parchment-50 rounded-2xl p-6 border-2 border-parchment-300 shadow-md space-y-4 text-center bg-paper-lines">
         <div className="w-16 h-16 rounded-full bg-forest-900 text-gold-300 font-serif font-black text-2xl flex items-center justify-center border-2 border-gold-500/50 shadow-md mx-auto">
-          {user?.name ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : 'MK'}
+          {user?.name ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : 'HP'}
         </div>
 
         <div>
-          <h2 className="text-xl font-black font-serif text-stone-900">{user?.name || 'Mouleuddin Khilji'}</h2>
-          <p className="text-xs font-mono text-stone-600 mt-0.5">{user?.phone || '9876543210'}</p>
-          <p className="text-xs text-stone-500 font-medium">{user?.email || 'mouleuddin@email.com'}</p>
+          <h2 className="text-xl font-black font-serif text-stone-900">{user?.name || 'Shopkeeper'}</h2>
+          {user?.phone ? (
+            <p className="text-xs font-mono text-stone-600 mt-0.5">{user.phone}</p>
+          ) : null}
+          <p className="text-xs text-stone-500 font-medium">{user?.email || ''}</p>
         </div>
 
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">

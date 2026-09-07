@@ -25,11 +25,11 @@ export function BusinessProfilePage() {
   useEffect(() => {
     if (profile) {
       setForm({
-        shop_name: profile.shop_name || 'ABC General Store',
-        owner_name: profile.owner_name || 'Mouleuddin Khilji',
-        address: profile.address || 'M.G. Road, Vijaypur, Karnataka',
-        phone: profile.phone || '9876543210',
-        gstin: profile.gstin || '29ABCDE1234F1Z5',
+        shop_name: profile.shop_name || '',
+        owner_name: profile.owner_name || '',
+        address: profile.address || '',
+        phone: profile.phone || '',
+        gstin: profile.gstin || '',
       });
     }
   }, [profile]);
