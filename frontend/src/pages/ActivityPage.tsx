@@ -81,7 +81,7 @@ export function ActivityPage() {
         />
       </div>
 
-      {/* Table Area */}
+      {/* Content Area */}
       {filtered.length === 0 ? (
         <EmptyState
           title="No activity recorded"
@@ -89,7 +89,45 @@ export function ActivityPage() {
         />
       ) : (
         <div className="bg-parchment-50 rounded-2xl border-2 border-parchment-300 shadow-md overflow-hidden bg-paper-lines">
-          <div className="overflow-x-auto">
+          {/* Mobile Card View (< md) */}
+          <div className="block md:hidden divide-y divide-parchment-200">
+            {filtered.map((t) => {
+              const isPayment = t.type === 'payment';
+              return (
+                <div
+                  key={t.id}
+                  onClick={() => navigate(`/customers/${t.customer}`)}
+                  className="p-4 hover:bg-parchment-100 cursor-pointer transition-colors space-y-1.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-sm text-stone-900 font-serif truncate">
+                        {t.customer_name || 'Customer'}
+                      </p>
+                      <p className="text-xs text-stone-600 truncate mt-0.5">
+                        {t.description || (isPayment ? 'Payment Received' : 'Credit Purchase')}
+                      </p>
+                      <p className="text-[10px] text-stone-500 font-mono mt-0.5">
+                        📅 {t.transaction_date}
+                      </p>
+                    </div>
+
+                    <div className="text-right flex-shrink-0">
+                      <p className={`font-black font-serif font-tabular text-base ${isPayment ? 'text-emerald-800' : 'text-rose-800'}`}>
+                        {isPayment ? '-' : '+'}₹{t.amount}
+                      </p>
+                      <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md ${isPayment ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {isPayment ? 'Payment' : 'Given'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b-2 border-parchment-300 text-stone-600 font-bold font-serif uppercase tracking-wider">

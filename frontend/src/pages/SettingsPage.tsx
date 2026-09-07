@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { useTheme } from '../features/theme/ThemeContext';
+import { usePWA } from '../features/pwa/usePWA';
+import { InstallAppModal } from '../components/pwa/InstallAppModal';
 import { ConfirmDialog } from '../components/ui/Modal';
 import { showToast } from '../components/ui/Toast';
 
 export function SettingsPage() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isInstalled, isIOS, promptInstall } = usePWA();
   const navigate = useNavigate();
   const [showLogout, setShowLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -63,6 +67,31 @@ export function SettingsPage() {
 
       {/* Settings Navigation List matching Screen 16 */}
       <div className="bg-parchment-50 rounded-2xl border-2 border-parchment-300 shadow-md divide-y divide-parchment-200 overflow-hidden bg-paper-lines">
+        {/* PWA App Install or Status */}
+        {!isInstalled ? (
+          <SettingsRow
+            icon="📱"
+            title="Install HisabPoint App"
+            subtitle={isIOS ? "Tap for iPhone 'Add to Home Screen' instructions" : "Install on your home screen or desktop for 1-tap khata"}
+            onClick={async () => {
+              if (isIOS) {
+                setShowInstallModal(true);
+              } else {
+                const res = await promptInstall();
+                if (res.outcome === 'manual') {
+                  setShowInstallModal(true);
+                }
+              }
+            }}
+          />
+        ) : (
+          <SettingsRow
+            icon="✅"
+            title="HisabPoint Installed"
+            subtitle="Running as an installed application on your device"
+            onClick={() => showToast('HisabPoint is running in installed standalone mode.', 'info')}
+          />
+        )}
         <SettingsRow
           icon="🏪"
           title="Business Profile"
@@ -110,6 +139,10 @@ export function SettingsPage() {
         />
       </div>
 
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+      />
 
       <ConfirmDialog
         isOpen={showLogout}

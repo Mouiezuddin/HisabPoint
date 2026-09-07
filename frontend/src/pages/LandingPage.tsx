@@ -1,11 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePWA } from '../features/pwa/usePWA';
+import { InstallAppModal } from '../components/pwa/InstallAppModal';
 
 type ModalType = 'how-it-works' | 'features' | 'benefits' | 'pricing' | 'reviews' | 'faq' | null;
 
 export function LandingPage() {
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const { isInstalled, isIOS, promptInstall } = usePWA();
+
+  const handleInstallClick = async () => {
+    if (isIOS) {
+      setShowInstallModal(true);
+    } else {
+      const res = await promptInstall();
+      if (res.outcome === 'manual') {
+        setShowInstallModal(true);
+      }
+    }
+  };
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -84,6 +99,16 @@ export function LandingPage() {
 
           {/* Header Actions */}
           <div className="flex items-center gap-3">
+            {!isInstalled && (
+              <button
+                onClick={handleInstallClick}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-[#194a32] bg-[#eae3d2] hover:bg-[#ded5be] border border-[#cfc4a6] rounded-xl transition-all shadow-xs cursor-pointer"
+                id="landing-header-install-btn"
+              >
+                <span>📲</span>
+                <span>Install App</span>
+              </button>
+            )}
             <button
               onClick={() => navigate('/login')}
               id="landing-btn-login"
@@ -584,23 +609,31 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* App Store / Google Play badges */}
-            <div className="flex flex-wrap justify-center gap-3">
-              <div className="bg-black text-white px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer border border-stone-800 shadow-md">
-                <span className="text-xl">▶</span>
-                <div className="text-left">
-                  <p className="text-[9px] uppercase font-bold text-stone-400">GET IT ON</p>
-                  <p className="text-xs font-bold font-sans">Google Play</p>
-                </div>
+            {/* PWA Device Availability & Install CTA */}
+            <div className="w-full max-w-[320px] bg-[#f0ebd9] border-2 border-[#d6cbaf] rounded-2xl p-4 text-center space-y-3 shadow-md">
+              <p className="text-xs font-black text-[#194a32] font-serif uppercase tracking-wider">
+                Use HisabPoint on any device
+              </p>
+              <div className="flex justify-center items-center gap-4 text-xs text-[#5c5449] font-bold">
+                <span className="flex items-center gap-1">📱 Phone</span>
+                <span className="flex items-center gap-1">💻 Laptop</span>
+                <span className="flex items-center gap-1">🖥 Desktop</span>
               </div>
 
-              <div className="bg-black text-white px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer border border-stone-800 shadow-md">
-                <span className="text-xl">🍏</span>
-                <div className="text-left">
-                  <p className="text-[9px] uppercase font-bold text-stone-400">Download on the</p>
-                  <p className="text-xs font-bold font-sans">App Store</p>
+              {!isInstalled ? (
+                <button
+                  onClick={handleInstallClick}
+                  id="landing-section-install-btn"
+                  className="w-full py-3 px-4 bg-[#194a32] hover:bg-[#133c28] text-white text-xs font-black rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+                >
+                  <span>📲</span>
+                  <span>Install HisabPoint</span>
+                </button>
+              ) : (
+                <div className="bg-emerald-100 text-emerald-800 text-xs font-bold py-2 rounded-xl border border-emerald-300">
+                  ✓ Installed on this device
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -791,6 +824,12 @@ export function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* PWA Multi-Platform Install Modal */}
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+      />
     </div>
   );
 }

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bgGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#081c13"/>
+      <stop offset="50%" stop-color="#0f2b1d"/>
+      <stop offset="100%" stop-color="#06160f"/>
+    </linearGradient>
+    <linearGradient id="goldGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+    <linearGradient id="crimsonGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#4c0519"/>
+    </linearGradient>
+    <linearGradient id="paperGrad192" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fefce8"/>
+      <stop offset="100%" stop-color="#fef08a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect width="192" height="192" rx="48" fill="url(#bgGrad192)"/>
+  <rect x="6" y="6" width="180" height="180" rx="42" fill="none" stroke="url(#goldGrad192)" stroke-width="2" stroke-dasharray="6 4" opacity="0.8"/>
+
+  <!-- Book Open -->
+  <path d="M45 56 C 68 52, 90 60, 96 66 C 102 60, 124 52, 147 56 L 147 139 C 124 135, 102 143, 96 148 C 90 143, 68 135, 45 139 Z" 
+        fill="url(#crimsonGrad192)" stroke="url(#goldGrad192)" stroke-width="2"/>
+
+  <!-- Left / Right Pages -->
+  <path d="M49 60 C 70 57, 89 64, 94 68 L 94 144 C 89 140, 70 133, 49 136 Z" fill="url(#paperGrad192)"/>
+  <path d="M98 68 C 103 64, 122 57, 143 60 L 143 136 C 122 133, 103 140, 98 144 Z" fill="url(#paperGrad192)"/>
+
+  <!-- Central Circle with Rupee -->
+  <circle cx="96" cy="107" r="24" fill="url(#bgGrad192)" stroke="url(#goldGrad192)" stroke-width="2"/>
+  <text x="96" y="116" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="25" font-weight="900" fill="url(#goldGrad192)" text-anchor="middle">₹</text>
+
+  <!-- Bottom Tag: खाता -->
+  <rect x="70" y="157" width="52" height="16" rx="4" fill="url(#goldGrad192)"/>
+  <text x="96" y="169" font-family="-apple-system, BlinkMacSystemFont, 'Noto Sans Devanagari', 'Segoe UI', sans-serif" font-size="10" font-weight="900" fill="#081c13" text-anchor="middle">खाता</text>
+</svg>

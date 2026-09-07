@@ -121,8 +121,75 @@ export function CustomerListPage() {
           />
         ) : (
           <div className="bg-parchment-50 rounded-2xl border-2 border-parchment-300 shadow-md overflow-hidden bg-paper-lines">
-            {/* Desktop Table View */}
-            <div className="overflow-x-auto">
+            {/* Mobile Card View (< md) */}
+            <div className="block md:hidden divide-y divide-parchment-200">
+              {filteredCustomers.map((c) => {
+                const isDue = c.balance_status === 'due';
+                return (
+                  <div
+                    key={c.id}
+                    className="p-4 hover:bg-parchment-100 transition-colors space-y-3"
+                  >
+                    {/* Top Row: Avatar, Name, Phone & Balance */}
+                    <div
+                      className="flex items-start justify-between gap-3 cursor-pointer"
+                      onClick={() => navigate(`/customers/${c.id}`)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-forest-900 text-gold-300 font-serif font-black text-sm flex items-center justify-center border border-gold-500/40 flex-shrink-0 shadow-xs">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-stone-900 text-sm sm:text-base font-serif truncate">
+                            {c.name}
+                          </h3>
+                          <p className="text-xs text-stone-600 font-mono">
+                            {c.phone ? `📞 ${c.phone}` : 'No phone'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right flex-shrink-0">
+                        <p className={`font-black font-serif font-tabular text-base ${isDue ? 'text-rose-800' : 'text-emerald-800'}`}>
+                          ₹{c.balance}
+                        </p>
+                        <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${isDue ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                          {isDue ? 'Due' : 'Settled'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Action Buttons (Touch Friendly) */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => setQuickTxnModal({ open: true, customerId: c.id, type: 'credit' })}
+                        className="flex-1 bg-rose-800 hover:bg-rose-900 text-white font-bold text-xs py-2 rounded-xl shadow-xs transition-transform active:scale-95 flex items-center justify-center gap-1"
+                        id={`btn-card-given-${c.id}`}
+                      >
+                        <span>+ Given</span>
+                      </button>
+                      <button
+                        onClick={() => setQuickTxnModal({ open: true, customerId: c.id, type: 'payment' })}
+                        className="flex-1 bg-forest-800 hover:bg-forest-900 text-white font-bold text-xs py-2 rounded-xl shadow-xs transition-transform active:scale-95 flex items-center justify-center gap-1"
+                        id={`btn-card-payment-${c.id}`}
+                      >
+                        <span>Payment</span>
+                      </button>
+                      <button
+                        onClick={() => navigate(`/customers/${c.id}`)}
+                        className="px-3 py-2 bg-parchment-200 hover:bg-parchment-300 text-stone-800 rounded-xl text-xs font-bold border border-parchment-300 flex items-center justify-center"
+                        title="View Ledger"
+                      >
+                        <span>👁️</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b-2 border-parchment-300 text-stone-600 font-bold font-serif uppercase tracking-wider">

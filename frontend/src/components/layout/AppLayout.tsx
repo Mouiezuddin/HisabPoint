@@ -5,8 +5,12 @@ import { DesktopHeader } from './DesktopHeader';
 import { QuickTransactionModal } from '../ui/QuickTransactionModal';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useTheme } from '../../features/theme/ThemeContext';
+import { InstallAppBanner } from '../pwa/InstallAppBanner';
+import { PWAUpdateToast } from '../pwa/PWAUpdateToast';
+import { NetworkStatusIndicator } from '../pwa/NetworkStatusIndicator';
 
-const mobileNavItems = [
+// Clean 4-item list designed around the central thumb '+' floating action button
+const mobileNavItemsLeft = [
   {
     to: '/dashboard',
     label: 'Home',
@@ -18,28 +22,22 @@ const mobileNavItems = [
   },
   {
     to: '/customers',
-    label: 'Ledger',
+    label: 'Customers',
     icon: (active: boolean) => (
       <svg className={`w-5 h-5 ${active ? 'text-gold-400 font-bold' : 'text-amber-200/60'}`} viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
       </svg>
     ),
   },
+];
+
+const mobileNavItemsRight = [
   {
     to: '/activity',
-    label: 'Logbook',
+    label: 'Activity',
     icon: (active: boolean) => (
       <svg className={`w-5 h-5 ${active ? 'text-gold-400 font-bold' : 'text-amber-200/60'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-  },
-  {
-    to: '/reports',
-    label: 'Reports',
-    icon: (active: boolean) => (
-      <svg className={`w-5 h-5 ${active ? 'text-gold-400 font-bold' : 'text-amber-200/60'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-        <path d="M18 20V10M12 20V4M6 20v-6" />
       </svg>
     ),
   },
@@ -57,13 +55,17 @@ const mobileNavItems = [
 
 export function BottomNav({ onOpenNewEntry }: { onOpenNewEntry: () => void }) {
   return (
-    <nav className="bottom-nav border-t-2 border-gold-500/60 bg-gradient-to-t from-leather-950 via-leather-900 to-leather-950 md:hidden z-40 shadow-2xl" aria-label="Mobile navigation">
-      {mobileNavItems.slice(0, 2).map((item) => (
+    <nav
+      className="bottom-nav border-t-2 border-gold-500/60 bg-gradient-to-t from-leather-950 via-leather-900 to-leather-950 md:hidden z-40 shadow-2xl safe-bottom"
+      aria-label="Mobile navigation"
+    >
+      {/* Left 2 items */}
+      {mobileNavItemsLeft.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
           className={({ isActive }) =>
-            `nav-item font-bold transition-all ${
+            `nav-item font-bold transition-all min-h-[48px] min-w-[48px] ${
               isActive ? 'text-gold-400 font-black scale-105' : 'text-amber-200/60 hover:text-amber-200'
             }`
           }
@@ -77,11 +79,11 @@ export function BottomNav({ onOpenNewEntry }: { onOpenNewEntry: () => void }) {
         </NavLink>
       ))}
 
-      {/* Tactile Metallic Brass Floating Action Button for Mobile */}
+      {/* Central Tactile Floating Action Button (FAB) for Given / Payment */}
       <button
         onClick={onOpenNewEntry}
-        className="-mt-6 bg-gradient-to-b from-emerald-400 via-emerald-600 to-emerald-800 text-white w-13 h-13 rounded-full flex items-center justify-center shadow-skeuo-green active:scale-95 transition-all border-2 border-amber-200"
-        aria-label="Add transaction"
+        className="-mt-7 bg-gradient-to-b from-emerald-400 via-emerald-600 to-emerald-800 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-skeuo-green active:scale-95 transition-all border-2 border-amber-200 flex-shrink-0 cursor-pointer"
+        aria-label="Add Credit or Payment"
         id="btn-mobile-nav-add"
       >
         <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -89,12 +91,13 @@ export function BottomNav({ onOpenNewEntry }: { onOpenNewEntry: () => void }) {
         </svg>
       </button>
 
-      {mobileNavItems.slice(2).map((item) => (
+      {/* Right 2 items */}
+      {mobileNavItemsRight.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
           className={({ isActive }) =>
-            `nav-item font-bold transition-all ${
+            `nav-item font-bold transition-all min-h-[48px] min-w-[48px] ${
               isActive ? 'text-gold-400 font-black scale-105' : 'text-amber-200/60 hover:text-amber-200'
             }`
           }
@@ -118,7 +121,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-dvh flex flex-col md:flex-row w-full text-stone-900 selection:bg-gold-500 selection:text-forest-950 bg-wood-desk">
+    <div className="min-h-dvh flex flex-col md:flex-row w-full text-stone-900 selection:bg-gold-500 selection:text-forest-950 bg-wood-desk overflow-x-hidden">
+      {/* Real-time Network Status (Online / Offline warning) */}
+      <NetworkStatusIndicator />
+
+      {/* PWA Safe Version Update Toast */}
+      <PWAUpdateToast />
+
       {/* Desktop Sidebar */}
       <Sidebar onOpenNewEntry={() => setQuickTxnOpen(true)} />
 
@@ -127,8 +136,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Desktop Header */}
         <DesktopHeader onOpenNewEntry={() => setQuickTxnOpen(true)} />
 
-        {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-gradient-to-r from-forest-950 via-forest-900 to-forest-950 text-white border-b-2 border-gold-500/50 sticky top-0 z-30 shadow-md leather-stitch">
+        {/* Mobile Header with Safe Area Support */}
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-gradient-to-r from-forest-950 via-forest-900 to-forest-950 text-white border-b-2 border-gold-500/50 sticky top-0 z-30 shadow-md leather-stitch pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <span className="text-xl font-black font-serif gold-emboss tracking-tight">HisabPoint</span>
             <span className="text-xs font-black bg-gold-500 text-forest-950 px-2 py-0.5 rounded-sm">
@@ -139,7 +148,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-1.5 bg-forest-900/90 border border-gold-500/50 rounded-full text-xs font-bold text-gold-300"
+              className="p-2 min-h-[40px] min-w-[40px] bg-forest-900/90 border border-gold-500/50 rounded-full text-xs font-bold text-gold-300 flex items-center justify-center cursor-pointer active:scale-95"
               title={theme === 'dark' ? 'Day Sunlight Mode' : 'Night Mode'}
               id="btn-theme-toggle-mobile"
             >
@@ -148,9 +157,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
             <button
               onClick={() => navigate('/settings')}
-              className="flex items-center gap-2 bg-forest-900/90 border border-gold-500/50 px-3 py-1 rounded-full text-xs font-bold text-gold-300"
+              className="flex items-center gap-2 bg-forest-900/90 border border-gold-500/50 px-3 py-1.5 min-h-[40px] rounded-full text-xs font-bold text-gold-300 cursor-pointer active:scale-95"
             >
-              <span>{user?.name?.split(' ')[0] || 'Shop'}</span>
+              <span className="max-w-[80px] truncate">{user?.name?.split(' ')[0] || 'Shop'}</span>
               <div className="w-5 h-5 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-forest-950 text-[10px] font-black flex items-center justify-center font-serif">
                 {user?.name?.charAt(0).toUpperCase() || 'S'}
               </div>
@@ -158,14 +167,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Main Content Body */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8">
+        {/* Main Content Body with Safe Bottom Padding for Mobile Nav */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 md:pb-8">
           {children}
         </main>
       </div>
 
       {/* Mobile Bottom Nav */}
       <BottomNav onOpenNewEntry={() => setQuickTxnOpen(true)} />
+
+      {/* Non-intrusive PWA Install Banner */}
+      <InstallAppBanner />
 
       {/* Global Quick Transaction Modal */}
       <QuickTransactionModal
@@ -175,3 +187,4 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+

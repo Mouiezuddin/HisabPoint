@@ -3,13 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="HisabPoint — Digital Customer Ledger for Local Shopkeepers. Works on Phone, Tablet & Desktop." />
-    <meta name="theme-color" content="#282c74" />
+    <link rel="apple-touch-icon" href="/icon-192.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <meta name="description" content="HisabPoint — Simple digital khata for your shop. Works seamlessly across Phone, Tablet & Desktop." />
+    
+    <!-- PWA & Mobile Web App Capabilities -->
+    <meta name="theme-color" content="#0f2b1d" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#081c13" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="HisabPoint" />
+    <meta name="format-detection" content="telephone=no" />
+    
     <title>HisabPoint — Digital Shopkeeper Ledger</title>
   </head>
-  <body>
+  <body class="bg-parchment-100 text-stone-900 overscroll-y-none select-none md:select-auto">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

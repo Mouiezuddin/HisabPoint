@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useTheme } from '../../features/theme/ThemeContext';
+import { InstallAppButton } from '../pwa/InstallAppButton';
 
 interface DesktopHeaderProps {
   onOpenNewEntry?: () => void;
@@ -44,6 +45,9 @@ export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
           </svg>
           <span>Search customer in ledger...</span>
         </div>
+
+        {/* PWA Install Button (automatically hidden if already installed) */}
+        <InstallAppButton variant="outline" label="Install App" />
 
         {/* 1-Click Theme Toggle Button */}
         <button

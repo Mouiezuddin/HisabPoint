@@ -120,39 +120,42 @@ export function CustomerDetailPage() {
         </div>
 
         {/* Quick Tools & Action Buttons Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-parchment-300">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate(`/customers/${id}/edit`)}
-              className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3.5 py-2 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-1.5"
-            >
-              <span>✏️ Edit Info</span>
-            </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-parchment-300">
+          {/* Secondary Utilities */}
+          <div className="flex flex-wrap items-center gap-2 order-2 sm:order-1">
             <button
               onClick={() => setShowWhatsAppModal(true)}
-              className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
+              className="flex-1 sm:flex-none bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95"
             >
-              <span>💬 WhatsApp Reminder</span>
+              <span>💬 WhatsApp</span>
             </button>
             <button
               onClick={() => setShowUpiModal(true)}
-              className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3.5 py-2 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-1.5"
+              className="flex-1 sm:flex-none bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3.5 py-2 rounded-xl border border-parchment-300 shadow-xs flex items-center justify-center gap-1.5 transition-transform active:scale-95"
             >
               <span>💳 UPI QR</span>
             </button>
+            <button
+              onClick={() => navigate(`/customers/${id}/edit`)}
+              className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3 py-2 rounded-xl border border-parchment-300 shadow-xs flex items-center justify-center gap-1"
+              title="Edit Details"
+            >
+              <span>✏️</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Primary Transaction Actions (Touch-reachable) */}
+          <div className="grid grid-cols-2 gap-2 w-full sm:w-auto order-1 sm:order-2">
             <button
               onClick={() => setQuickTxnModal({ open: true, type: 'credit' })}
-              className="bg-rose-800 hover:bg-rose-900 text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md flex items-center gap-1"
+              className="bg-rose-800 hover:bg-rose-900 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1 transition-transform active:scale-95"
               id="btn-add-given"
             >
               <span>+ Given</span>
             </button>
             <button
               onClick={() => setQuickTxnModal({ open: true, type: 'payment' })}
-              className="btn-forest text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md flex items-center gap-1"
+              className="btn-forest text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-1 transition-transform active:scale-95"
               id="btn-add-payment"
             >
               <span>Payment</span>
@@ -161,7 +164,7 @@ export function CustomerDetailPage() {
         </div>
       </div>
 
-      {/* Transaction History Table matching Screen 8 */}
+      {/* Transaction History Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-black font-serif text-stone-900">Transaction History</h2>
@@ -206,7 +209,41 @@ export function CustomerDetailPage() {
             />
           ) : (
             <div className="bg-parchment-50 rounded-2xl border-2 border-parchment-300 shadow-md overflow-hidden bg-paper-lines">
-              <div className="overflow-x-auto">
+              {/* Mobile Cards for Transactions (< md) */}
+              <div className="block md:hidden divide-y divide-parchment-200">
+                {filteredTxns.map((t: Transaction) => {
+                  const isCredit = t.type === 'credit';
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => navigate(`/ledger/transaction/${t.id}`)}
+                      className="p-4 hover:bg-parchment-100 cursor-pointer transition-colors space-y-1.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm text-stone-900 font-serif">
+                            {t.description || (isCredit ? 'Credit Given' : 'Payment Received')}
+                          </p>
+                          <p className="text-[11px] text-stone-500 font-mono mt-0.5">
+                            📅 {t.transaction_date}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className={`font-black font-serif font-tabular text-base ${isCredit ? 'text-rose-800' : 'text-emerald-800'}`}>
+                            {isCredit ? '+' : '-'}₹{t.amount}
+                          </p>
+                          <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md ${isCredit ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                            {isCredit ? 'Given' : 'Received'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b-2 border-parchment-300 text-stone-600 font-bold font-serif uppercase tracking-wider">
