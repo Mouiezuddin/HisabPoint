@@ -22,8 +22,8 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
     <ResponsiveModal isOpen={isOpen} onClose={onClose} title="Install HisabPoint App">
       <div className="space-y-5 text-center">
         {/* App Icon Graphic */}
-        <div className="mx-auto w-20 h-20 rounded-3xl bg-gradient-to-br from-forest-950 via-forest-900 to-forest-950 border-2 border-gold-500 shadow-lg flex items-center justify-center">
-          <img src="/favicon.svg" alt="HisabPoint Icon" className="w-14 h-14" />
+        <div className="mx-auto w-20 h-20 rounded-3xl bg-[#f7f4ea] border-2 border-gold-500 shadow-lg flex items-center justify-center overflow-hidden p-1">
+          <img src="/logo-mark.png" alt="HisabPoint Icon" className="w-full h-full rounded-2xl object-cover" />
         </div>
 
         <div>

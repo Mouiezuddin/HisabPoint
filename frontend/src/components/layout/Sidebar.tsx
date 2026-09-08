@@ -66,17 +66,24 @@ export function Sidebar({ onOpenNewEntry }: SidebarProps) {
     <aside className="w-64 bg-gradient-to-b from-forest-950 via-forest-900 to-forest-950 text-amber-100 flex flex-col justify-between flex-shrink-0 border-r-4 border-gold-600/40 shadow-2xl hidden md:flex sticky top-0 h-dvh leather-stitch z-30">
       <div>
         {/* Skeuomorphic Leather Bahi Khata Brand Header */}
-        <div className="p-6 border-b-2 border-gold-600/30 bg-forest-950/80 shadow-inner">
-          <div className="cursor-pointer space-y-1" onClick={() => navigate('/dashboard')}>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-black font-serif gold-emboss tracking-tight">HisabPoint</span>
-              <span className="text-xs font-black bg-gold-500 text-forest-950 px-2 py-0.5 rounded-sm shadow-sm border border-amber-300">
-                खाता
-              </span>
+        <div className="p-5 border-b-2 border-gold-600/30 bg-forest-950/80 shadow-inner">
+          <div className="cursor-pointer flex items-center gap-3" onClick={() => navigate('/dashboard')}>
+            <img
+              src="/logo-mark.png"
+              alt="HisabPoint Logo"
+              className="w-11 h-11 rounded-xl object-contain shadow-md border border-gold-500/50 bg-[#f7f4ea] flex-shrink-0"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-black font-serif gold-emboss tracking-tight">HisabPoint</span>
+                <span className="text-[10px] font-black bg-gold-500 text-forest-950 px-1.5 py-0.5 rounded shadow-sm border border-amber-300">
+                  खाता
+                </span>
+              </div>
+              <p className="text-[9px] font-bold text-gold-400/90 tracking-wider uppercase mt-0.5">
+                DIGITAL BAHI KHATA
+              </p>
             </div>
-            <p className="text-[10px] font-bold text-gold-400/90 tracking-widest uppercase">
-              📖 DIGITAL BAHI KHATA
-            </p>
           </div>
         </div>
 

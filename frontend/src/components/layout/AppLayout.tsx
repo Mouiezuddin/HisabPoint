@@ -139,6 +139,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile Header with Safe Area Support */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-gradient-to-r from-forest-950 via-forest-900 to-forest-950 text-white border-b-2 border-gold-500/50 sticky top-0 z-30 shadow-md leather-stitch pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <img
+              src="/logo-mark.png"
+              alt="HisabPoint Logo"
+              className="w-8 h-8 rounded-lg object-contain shadow-sm border border-gold-500/40 bg-[#f7f4ea] flex-shrink-0"
+            />
             <span className="text-xl font-black font-serif gold-emboss tracking-tight">HisabPoint</span>
             <span className="text-xs font-black bg-gold-500 text-forest-950 px-2 py-0.5 rounded-sm">
               खाता

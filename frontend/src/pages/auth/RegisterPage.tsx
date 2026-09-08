@@ -86,9 +86,11 @@ export function RegisterPage() {
                 className="flex items-center gap-2.5 cursor-pointer group"
                 onClick={() => navigate('/')}
               >
-                <div className="w-9 h-9 rounded-xl bg-[#194a32] text-white flex items-center justify-center font-bold shadow-md">
-                  📖
-                </div>
+                <img
+                  src="/logo-mark.png"
+                  alt="HisabPoint Logo"
+                  className="w-10 h-10 rounded-xl object-contain shadow-md border border-[#c4b595] bg-[#f7f4ea]"
+                />
                 <div>
                   <span className="text-2xl font-black font-serif text-[#194a32] tracking-tight group-hover:underline">
                     HisabPoint

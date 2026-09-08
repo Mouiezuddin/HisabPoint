@@ -39,14 +39,11 @@ export function LandingPage() {
             onClick={() => navigate('/')}
             className="flex items-center gap-3 cursor-pointer group select-none"
           >
-            <div className="w-11 h-11 rounded-xl bg-[#194a32] flex items-center justify-center shadow-md border border-[#2d6447] text-white">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                <path d="M8 7h8" />
-                <path d="M8 11h6" />
-              </svg>
-            </div>
+            <img
+              src="/logo-mark.png"
+              alt="HisabPoint Logo"
+              className="w-11 h-11 rounded-xl object-contain shadow-md border border-[#c4b595] bg-[#f7f4ea]"
+            />
             <div>
               <span className="text-2xl font-black tracking-tight text-[#194a32] font-serif">
                 HisabPoint
@@ -713,9 +710,11 @@ export function LandingPage() {
           {/* Logo & Tagline */}
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#194a32] text-white flex items-center justify-center font-bold">
-                📖
-              </div>
+              <img
+                src="/logo-mark.png"
+                alt="HisabPoint Logo"
+                className="w-9 h-9 rounded-xl object-contain shadow-sm border border-[#c4b595] bg-[#f7f4ea]"
+              />
               <span className="text-xl font-black font-serif text-[#194a32]">HisabPoint</span>
             </div>
             <p className="text-xs text-[#786f62]">Your shop's khata, made digital.</p>
