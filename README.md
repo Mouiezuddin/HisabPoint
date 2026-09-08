@@ -11,13 +11,12 @@
   [![Django REST Framework](https://img.shields.io/badge/DRF-3.15-red?logo=django&logoColor=white)](https://www.django-rest-framework.org/)
   [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
   [![PWA](https://img.shields.io/badge/PWA-Installable-purple?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-  [![Vercel](https://img.shields.io/badge/Frontend-Vercel-black?logo=vercel&logoColor=white)](https://hisab-point.vercel.app)
-  [![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render&logoColor=white)](https://hisabpoint.onrender.com)
+  [![Vercel](https://img.shields.io/badge/Deployment-Vercel-black?logo=vercel&logoColor=white)](https://hisab-point.vercel.app)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
   <br />
 
-  **[🌐 Live Web & PWA App](https://hisab-point.vercel.app)** • **[⚙️ Backend API](https://hisabpoint.onrender.com)** • **[🩺 Health Check](https://hisabpoint.onrender.com/api/health/)**
+  **[🌐 Launch Live Web & PWA Application](https://hisab-point.vercel.app)**
 
   <p align="center">
     A modern, mobile-first, and skeuomorphic Progressive Web App (PWA) designed for small Indian shopkeepers and retail businesses to replace traditional paper Bahi Khata notebooks with an instant, secure digital ledger.
@@ -29,7 +28,17 @@
 
 ## 📸 Application Showcase
 
-### 1. Dashboard Overview
+### 1. Bahi Khata Authentication & Onboarding
+Skeuomorphic double-page notebook design for fast 30-second registration and quick password/demo sign-in.
+
+<div align="center">
+  <img src="docs/screenshots/login.png" alt="HisabPoint Sign In" width="49%" style="border-radius: 12px; border: 1px solid #e5dec8;" />
+  <img src="docs/screenshots/register.png" alt="HisabPoint Registration" width="49%" style="border-radius: 12px; border: 1px solid #e5dec8;" />
+</div>
+
+<br />
+
+### 2. Dashboard Overview
 Instant high-level snapshot of **Total Due**, **Credit Given Today**, and **Payments Received Today** with quick customer search and recent transaction logs.
 
 <div align="center">
@@ -38,7 +47,16 @@ Instant high-level snapshot of **Total Due**, **Credit Given Today**, and **Paym
 
 <br />
 
-### 2. Customer Directory & Ledger
+### 3. One-Tap Quick Transaction Modal
+Record Credit (`+ Given`) or Payment (`- Received`) entries in seconds with auto-suggest customer dropdown and instant balance computation.
+
+<div align="center">
+  <img src="docs/screenshots/transaction-modal.png" alt="HisabPoint Quick Transaction Modal" width="100%" style="border-radius: 12px; border: 1px solid #e5dec8;" />
+</div>
+
+<br />
+
+### 4. Customer Directory & Ledger
 Quickly search, filter (All, Due, Paid), and manage customer accounts with one-tap access to credit/debit records.
 
 <div align="center">
@@ -47,7 +65,7 @@ Quickly search, filter (All, Due, Paid), and manage customer accounts with one-t
 
 <br />
 
-### 3. Shop Activity Logbook
+### 5. Shop Activity Logbook
 Chronological audit log tracking every rupee given or collected across the entire shop with date and customer tags.
 
 <div align="center">
@@ -56,7 +74,7 @@ Chronological audit log tracking every rupee given or collected across the entir
 
 <br />
 
-### 4. Business Analytics & Reports
+### 6. Business Analytics & Reports
 7-day daily summaries, aggregate given/collected totals, and actionable business health insights.
 
 <div align="center">
@@ -65,7 +83,7 @@ Chronological audit log tracking every rupee given or collected across the entir
 
 <br />
 
-### 5. Account & Ledger Settings
+### 7. Account & Ledger Settings
 PWA installation trigger, business profile details, and one-click toggle between Sunlight Day and Royal Night skeuomorphic themes.
 
 <div align="center">
@@ -81,7 +99,7 @@ PWA installation trigger, business profile details, and one-click toggle between
 - **⚡ Blazing Fast Performance**:
   - Route code-splitting with `React.lazy` (< 270 kB main bundle).
   - High-efficiency WebP asset pipeline (< 45 kB logo & icons).
-  - Sub-250ms Vercel edge delivery.
+  - Sub-250ms edge delivery.
   - 24/7 database auto-warming probe eliminating serverless cold starts.
 - **🛡️ Accounting Integrity & Auditability**:
   - Balance is dynamically calculated from ledger transactions — never manually altered.
