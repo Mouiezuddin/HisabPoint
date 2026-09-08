@@ -16,6 +16,7 @@ from .views import (
     disable_2fa_view,
     send_email_verification_view,
     verify_email_view,
+    google_auth_view,
 )
 from .admin_views import AdminUserListView, admin_stats_view
 
@@ -23,6 +24,7 @@ urlpatterns = [
     # Auth core
     path("register/", RegisterView.as_view(), name="auth-register"),
     path("login/", CustomTokenObtainPairView.as_view(), name="auth-login"),
+    path("google/", google_auth_view, name="auth-google"),
     path("logout/", logout_view, name="auth-logout"),
     path("token/refresh/", cookie_refresh_token_view, name="token-refresh"),
     path("profile/", ProfileView.as_view(), name="auth-profile"),

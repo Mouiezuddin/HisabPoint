@@ -8,6 +8,7 @@ interface AuthContextValue {
   isLoggedIn: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthTokens>;
+  loginWithGoogle: (googleToken: string) => Promise<AuthTokens>;
   register: (data: { email: string; name: string; phone?: string; password: string; password2: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -53,6 +54,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res;
   }, []);
 
+  const loginWithGoogle = useCallback(async (googleToken: string) => {
+    const res = await authService.googleAuth(googleToken);
+    if (res.access) {
+      localStorage.setItem('ledger_access_token', res.access);
+    }
+    if (res.refresh) {
+      localStorage.setItem('ledger_refresh_token', res.refresh);
+    }
+    if (res.user) {
+      setUser(res.user);
+    }
+    return res;
+  }, []);
+
   const register = useCallback(async (data: { email: string; name: string; phone?: string; password: string; password2: string }) => {
     const result = await authService.register(data);
     if (result.access) {
@@ -78,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, login, loginWithGoogle, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

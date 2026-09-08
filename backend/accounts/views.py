@@ -463,3 +463,66 @@ def verify_email_view(request):
     user.save(update_fields=["is_email_verified"])
 
     return Response({"message": "Email address verified successfully."})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([AuthRateThrottle])
+def google_auth_view(request):
+    """POST /api/auth/google/ — authenticate or register user via Google OAuth ID Token."""
+    token = request.data.get("token")
+    if not token:
+        return Response({"error": "Google ID token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+
+        client_id = getattr(
+            settings,
+            "GOOGLE_CLIENT_ID",
+            "936456474682-ilijsok5msld8s17jdiccrddshfuimu0.apps.googleusercontent.com",
+        )
+        id_info = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
+
+        email = id_info.get("email")
+        if not email:
+            return Response(
+                {"error": "Google account does not have an email address associated."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = email.lower().strip()
+        name = id_info.get("name") or email.split("@")[0]
+
+        # Find or create user
+        user = User.objects.filter(email=email).first()
+        if not user:
+            user = User.objects.create(
+                email=email,
+                name=name,
+                is_email_verified=True,
+            )
+            user.set_unusable_password()
+            user.save()
+            get_or_create_business_profile(user)
+        else:
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                user.save(update_fields=["is_email_verified"])
+            get_or_create_business_profile(user)
+
+        refresh = RefreshToken.for_user(user)
+        resp_data = {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": UserProfileSerializer(user).data,
+            "message": "Google authentication successful.",
+        }
+        res = Response(resp_data, status=status.HTTP_200_OK)
+        return set_jwt_cookies(res, refresh.access_token, refresh)
+
+    except ValueError as e:
+        return Response({"error": f"Invalid or expired Google token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": f"Google authentication failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

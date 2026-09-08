@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../features/auth/AuthContext';
 import { getErrorMessage } from '../../utils/format';
 
 export function RegisterPage() {
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password2: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
   function set(field: string, value: string) {
@@ -59,6 +61,27 @@ export function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
+    if (!credentialResponse.credential) {
+      setServerError('Google authentication did not provide a valid credential token.');
+      return;
+    }
+    setGoogleLoading(true);
+    setServerError('');
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setServerError(getErrorMessage(err));
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  function handleGoogleError() {
+    setServerError('Google Sign-In failed or was cancelled. Please try again.');
   }
 
   return (
@@ -231,7 +254,7 @@ export function RegisterPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                   className="w-full btn-forest text-white font-bold py-3.5 text-xs rounded-xl shadow-md flex items-center justify-center gap-2 mt-2"
                   id="reg-submit"
                 >
@@ -244,6 +267,32 @@ export function RegisterPage() {
                     </>
                   )}
                 </button>
+
+                <div className="relative my-3">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#d8cfbe]" />
+                  </div>
+                  <div className="relative flex justify-center text-[11px] uppercase">
+                    <span className="bg-[#f7f4ea] px-2 text-[#786f62] font-bold">or continue with</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-center w-full min-h-[40px] items-center">
+                  {googleLoading ? (
+                    <div className="text-xs font-bold text-[#194a32] animate-pulse">
+                      Setting up account with Google...
+                    </div>
+                  ) : (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      shape="pill"
+                      theme="outline"
+                      text="continue_with"
+                      width="100%"
+                    />
+                  )}
+                </div>
               </form>
             </div>
 

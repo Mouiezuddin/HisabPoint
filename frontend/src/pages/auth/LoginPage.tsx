@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../features/auth/AuthContext';
 import { getErrorMessage } from '../../utils/format';
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -25,6 +27,27 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
+    if (!credentialResponse.credential) {
+      setError('Google authentication did not provide a valid credential token.');
+      return;
+    }
+    setGoogleLoading(true);
+    setError('');
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  function handleGoogleError() {
+    setError('Google Sign-In failed or was cancelled. Please try again.');
   }
 
   function handleDemoFill() {
@@ -151,7 +174,7 @@ export function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                   className="w-full btn-forest text-white font-bold py-3.5 text-xs rounded-xl shadow-md flex items-center justify-center gap-2 mt-2"
                   id="login-submit"
                 >
@@ -164,6 +187,32 @@ export function LoginPage() {
                     </>
                   )}
                 </button>
+
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#d8cfbe]" />
+                  </div>
+                  <div className="relative flex justify-center text-[11px] uppercase">
+                    <span className="bg-[#f7f4ea] px-2 text-[#786f62] font-bold">or continue with</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-center w-full min-h-[40px] items-center">
+                  {googleLoading ? (
+                    <div className="text-xs font-bold text-[#194a32] animate-pulse">
+                      Signing in with Google...
+                    </div>
+                  ) : (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      shape="pill"
+                      theme="outline"
+                      text="continue_with"
+                      width="100%"
+                    />
+                  )}
+                </div>
               </form>
             </div>
 

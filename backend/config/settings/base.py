@@ -158,3 +158,9 @@ CORS_ALLOW_CREDENTIALS = True
 # Email
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@ledger.local")
+
+# Google OAuth
+GOOGLE_CLIENT_ID = config(
+    "GOOGLE_CLIENT_ID",
+    default="936456474682-ilijsok5msld8s17jdiccrddshfuimu0.apps.googleusercontent.com",
+)

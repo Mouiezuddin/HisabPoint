@@ -24,4 +24,6 @@ services:
         value: "8000"
       - key: PYTHON_VERSION
         value: "3.12"
+      - key: GOOGLE_CLIENT_ID
+        value: 936456474682-ilijsok5msld8s17jdiccrddshfuimu0.apps.googleusercontent.com
 
