@@ -40,7 +40,7 @@ export function LandingPage() {
             className="flex items-center gap-3 cursor-pointer group select-none"
           >
             <img
-              src="/logo-mark.png"
+              src="/logo-mark.webp"
               alt="HisabPoint Logo"
               className="w-11 h-11 rounded-xl object-contain shadow-md border border-[#c4b595] bg-[#f7f4ea]"
             />
@@ -711,7 +711,7 @@ export function LandingPage() {
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center gap-3">
               <img
-                src="/logo-mark.png"
+                src="/logo-mark.webp"
                 alt="HisabPoint Logo"
                 className="w-9 h-9 rounded-xl object-contain shadow-sm border border-[#c4b595] bg-[#f7f4ea]"
               />

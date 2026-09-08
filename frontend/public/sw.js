@@ -8,7 +8,7 @@
  *    bypass this cache completely to preserve data integrity and privacy.
  */
 
-const CACHE_VERSION = 'v1.2.0';
+const CACHE_VERSION = 'v1.3.0';
 const STATIC_CACHE = `hisabpoint-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `hisabpoint-runtime-${CACHE_VERSION}`;
 
@@ -25,8 +25,8 @@ const APP_SHELL_ASSETS = [
   '/icon-512.png',
   '/icon-maskable.png',
   '/apple-touch-icon.png',
-  '/logo.png',
-  '/logo-mark.png'
+  '/logo.webp',
+  '/logo-mark.webp'
 ];
 
 // Install: Pre-cache app shell

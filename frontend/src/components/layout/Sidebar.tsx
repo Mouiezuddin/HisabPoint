@@ -69,7 +69,7 @@ export function Sidebar({ onOpenNewEntry }: SidebarProps) {
         <div className="p-5 border-b-2 border-gold-600/30 bg-forest-950/80 shadow-inner">
           <div className="cursor-pointer flex items-center gap-3" onClick={() => navigate('/dashboard')}>
             <img
-              src="/logo-mark.png"
+              src="/logo-mark.webp"
               alt="HisabPoint Logo"
               className="w-11 h-11 rounded-xl object-contain shadow-md border border-gold-500/50 bg-[#f7f4ea] flex-shrink-0"
             />

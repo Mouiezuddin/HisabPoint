@@ -59,7 +59,7 @@ export function LoginPage() {
                   onClick={() => navigate('/')}
                 >
                   <img
-                    src="/logo-mark.png"
+                    src="/logo-mark.webp"
                     alt="HisabPoint Logo"
                     className="w-10 h-10 rounded-xl object-contain shadow-md border border-[#c4b595] bg-[#f7f4ea]"
                   />

@@ -23,7 +23,7 @@ export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
       <div className="space-y-5 text-center">
         {/* App Icon Graphic */}
         <div className="mx-auto w-20 h-20 rounded-3xl bg-[#f7f4ea] border-2 border-gold-500 shadow-lg flex items-center justify-center overflow-hidden p-1">
-          <img src="/logo-mark.png" alt="HisabPoint Icon" className="w-full h-full rounded-2xl object-cover" />
+          <img src="/logo-mark.webp" alt="HisabPoint Icon" className="w-full h-full rounded-2xl object-cover" />
         </div>
 
         <div>
