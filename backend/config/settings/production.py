@@ -15,7 +15,7 @@ db_default_url = (
 DATABASES = {
     "default": dj_database_url.config(
         default=config("DATABASE_URL", default=db_default_url),
-        conn_max_age=60,
+        conn_max_age=600,
         ssl_require=True,
     )
 }

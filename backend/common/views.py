@@ -57,10 +57,22 @@ def api_root_view(request):
 
 
 def health_check_view(request):
-    """API health check endpoint for monitoring and uptime probes."""
+    """API health check endpoint for monitoring and uptime probes.
+    Executes a lightweight query to keep Neon PostgreSQL compute instance warm 24/7.
+    """
     from django.http import JsonResponse
+    from django.db import connection
+
+    db_status = "ok"
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+    except Exception as e:
+        db_status = f"unreachable: {str(e)}"
+
     return JsonResponse({
-        "status": "ok",
+        "status": "ok" if db_status == "ok" else "degraded",
+        "database": db_status,
         "service": "HisabPoint Digital Ledger API",
         "version": "1.0.0"
     })

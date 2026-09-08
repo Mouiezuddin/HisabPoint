@@ -29,8 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // On mount, fetch profile using HttpOnly session cookie
+  // On mount, only verify profile if an access token exists in storage
   useEffect(() => {
+    const token = localStorage.getItem('ledger_access_token');
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);
 
