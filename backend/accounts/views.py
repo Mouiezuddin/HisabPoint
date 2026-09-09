@@ -472,7 +472,10 @@ def google_auth_view(request):
     """POST /api/auth/google/ — authenticate or register user via Google OAuth ID Token."""
     token = request.data.get("token")
     if not token:
-        return Response({"error": "Google ID token is required."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "Google ID token is required.", "message": "Google ID token is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     try:
         from google.oauth2 import id_token
@@ -488,7 +491,10 @@ def google_auth_view(request):
         email = id_info.get("email")
         if not email:
             return Response(
-                {"error": "Google account does not have an email address associated."},
+                {
+                    "error": "Google account does not have an email address associated.",
+                    "message": "Google account does not have an email address associated.",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -523,6 +529,8 @@ def google_auth_view(request):
         return set_jwt_cookies(res, refresh.access_token, refresh)
 
     except ValueError as e:
-        return Response({"error": f"Invalid or expired Google token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        err_msg = f"Invalid or expired Google token: {str(e)}"
+        return Response({"error": err_msg, "message": err_msg}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        return Response({"error": f"Google authentication failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        err_msg = f"Google authentication failed: {str(e)}"
+        return Response({"error": err_msg, "message": err_msg}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

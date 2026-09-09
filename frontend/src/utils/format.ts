@@ -71,12 +71,42 @@ export function getBalanceLabel(status: BalanceStatus): string {
 }
 
 /**
- * Extract a human-readable error message from an Axios error.
+ * Extract a human-readable error message from an Axios error or generic error.
  */
 export function getErrorMessage(error: unknown): string {
-  if (error && typeof error === 'object' && 'response' in error) {
-    const resp = (error as { response?: { data?: { message?: string } } }).response;
-    return resp?.data?.message || 'Something went wrong. Please try again.';
+  if (error && typeof error === 'object') {
+    // Check for Axios response errors
+    if ('response' in error) {
+      const resp = (error as { response?: { data?: Record<string, unknown>; status?: number } }).response;
+      const data = resp?.data;
+      if (data && typeof data === 'object') {
+        if (typeof data.message === 'string' && data.message) {
+          return data.message;
+        }
+        if (typeof data.error === 'string' && data.error) {
+          return data.error;
+        }
+        if (typeof data.detail === 'string' && data.detail) {
+          return data.detail;
+        }
+        // Check for field-specific errors e.g. { email: ["User already exists."] }
+        for (const val of Object.values(data)) {
+          if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'string') {
+            return val[0];
+          }
+          if (typeof val === 'string' && val) {
+            return val;
+          }
+        }
+      }
+      return 'Something went wrong. Please try again.';
+    }
+
+    // Check for timeout or aborted connections
+    const errObj = error as { code?: string; message?: string };
+    if (errObj.code === 'ECONNABORTED' || errObj.message?.toLowerCase().includes('timeout')) {
+      return 'The server took too long to respond. Render may be waking up from sleep — please try again in a few seconds.';
+    }
   }
   return 'Could not connect to the server. Check your internet connection.';
 }

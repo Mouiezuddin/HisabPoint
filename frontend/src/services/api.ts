@@ -13,7 +13,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Enables browser to send and receive HttpOnly cookies
-  timeout: 15000,
+  timeout: 75000, // 75s allows Render free-tier cold starts to boot up without aborting
 });
 
 // Attach Bearer token if present (supports cross-domain deployments where 3rd-party cookies might be blocked)
