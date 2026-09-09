@@ -63,6 +63,11 @@ export const authService = {
     return res.data;
   },
 
+  async verify2FA(pre_auth_token: string, code: string): Promise<AuthTokens> {
+    const res = await api.post('/auth/2fa/verify/', { pre_auth_token, code });
+    return res.data;
+  },
+
   async disable2FA(password: string): Promise<{ message: string }> {
     const res = await api.post('/auth/2fa/disable/', { password });
     return res.data;

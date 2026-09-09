@@ -5,7 +5,7 @@ import { useAuth } from '../../features/auth/AuthContext';
 import { getErrorMessage } from '../../utils/format';
 
 export function LoginPage() {
-  const { login, loginWithGoogle } = useAuth();
+  const { login, verify2FA, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,19 +14,53 @@ export function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 2FA Challenge State
+  const [twoFaPending, setTwoFaPending] = useState(false);
+  const [preAuthToken, setPreAuthToken] = useState('');
+  const [twoFaCode, setTwoFaCode] = useState('');
+  const [twoFaLoading, setTwoFaLoading] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password) return;
     setLoading(true);
     setError('');
     try {
-      await login(email.trim(), password);
-      navigate('/', { replace: true });
+      const res = await login(email.trim(), password);
+      if (res && res['2fa_required'] && res.pre_auth_token) {
+        setTwoFaPending(true);
+        setPreAuthToken(res.pre_auth_token);
+        setTwoFaCode('');
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleTwoFaSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!twoFaCode.trim() || !preAuthToken) return;
+    setTwoFaLoading(true);
+    setError('');
+    try {
+      await verify2FA(preAuthToken, twoFaCode.trim());
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setTwoFaLoading(false);
+    }
+  }
+
+  function handleCancelTwoFa() {
+    setTwoFaPending(false);
+    setPreAuthToken('');
+    setTwoFaCode('');
+    setError('');
   }
 
   async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
@@ -96,20 +130,26 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleDemoFill}
-                  className="text-[11px] font-bold text-[#194a32] bg-[#ece5d5] hover:bg-[#e2d8c3] px-2.5 py-1 rounded-lg border border-[#cfc4a6] transition-all"
-                  title="Auto-fill demo credentials"
-                >
-                  ⚡ Fill Demo
-                </button>
+                {!twoFaPending && (
+                  <button
+                    type="button"
+                    onClick={handleDemoFill}
+                    className="text-[11px] font-bold text-[#194a32] bg-[#ece5d5] hover:bg-[#e2d8c3] px-2.5 py-1 rounded-lg border border-[#cfc4a6] transition-all"
+                    title="Auto-fill demo credentials"
+                  >
+                    ⚡ Fill Demo
+                  </button>
+                )}
               </div>
 
               <div>
-                <h1 className="text-2xl font-black font-serif text-[#1c1815]">Welcome Back!</h1>
+                <h1 className="text-2xl font-black font-serif text-[#1c1815]">
+                  {twoFaPending ? 'Security Verification' : 'Welcome Back!'}
+                </h1>
                 <p className="text-xs text-[#665e52] font-medium mt-1">
-                  Sign in to access your digital shop khata & customer ledger
+                  {twoFaPending
+                    ? 'Verify your identity using your authenticator code'
+                    : 'Sign in to access your digital shop khata & customer ledger'}
                 </p>
               </div>
 
@@ -119,101 +159,156 @@ export function LoginPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                <div>
-                  <label className="block text-xs font-bold text-[#4a433b] mb-1.5" htmlFor="login-email">
-                    Email or Phone Number
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
-                      📱
-                    </span>
-                    <input
-                      id="login-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="9876543210 or email@domain.com"
-                      className="input text-xs pl-10 bg-[#fffdf7]"
-                      required
-                    />
+              {twoFaPending ? (
+                <form onSubmit={handleTwoFaSubmit} className="space-y-4" noValidate>
+                  <div className="bg-[#fff9e6] border border-[#d4af37]/60 rounded-xl p-3.5 text-center space-y-1">
+                    <div className="text-2xl">🛡️</div>
+                    <p className="text-xs font-bold text-stone-800">
+                      Two-Factor Authentication Required
+                    </p>
+                    <p className="text-[11px] text-stone-600">
+                      Enter the 6-digit code from Google Authenticator, Authy, or one of your 8 backup recovery codes.
+                    </p>
                   </div>
-                </div>
 
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-[#4a433b]" htmlFor="login-password">
-                      Password
+                  <div>
+                    <label className="block text-xs font-bold text-[#4a433b] mb-1.5" htmlFor="login-2fa-code">
+                      6-Digit Authenticator or Recovery Code
                     </label>
-                    <Link to="/forgot-password" className="text-xs text-[#194a32] font-bold hover:underline">
-                      Forgot Password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
-                      🔒
-                    </span>
                     <input
-                      id="login-password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="input text-xs pl-10 pr-10 bg-[#fffdf7]"
+                      id="login-2fa-code"
+                      type="text"
+                      autoFocus
+                      maxLength={16}
+                      value={twoFaCode}
+                      onChange={(e) => setTwoFaCode(e.target.value)}
+                      placeholder="e.g. 123456 or A1B2-C3D4"
+                      className="input text-center text-base tracking-widest font-mono font-bold bg-[#fffdf7] uppercase"
                       required
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 text-xs font-bold hover:text-stone-800"
-                    >
-                      {showPassword ? '🙈' : '👁️'}
-                    </button>
                   </div>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={loading || googleLoading}
-                  className="w-full btn-forest text-white font-bold py-3.5 text-xs rounded-xl shadow-md flex items-center justify-center gap-2 mt-2"
-                  id="login-submit"
-                >
-                  {loading ? (
-                    <span>Signing In…</span>
-                  ) : (
-                    <>
-                      <span>Sign In to Khata</span>
-                      <span>→</span>
-                    </>
-                  )}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={twoFaLoading || !twoFaCode.trim()}
+                    className="w-full btn-forest text-white font-bold py-3.5 text-xs rounded-xl shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+                    id="login-2fa-submit"
+                  >
+                    {twoFaLoading ? (
+                      <span>Verifying Code…</span>
+                    ) : (
+                      <>
+                        <span>Verify & Unlock Khata</span>
+                        <span>→</span>
+                      </>
+                    )}
+                  </button>
 
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[#d8cfbe]" />
-                  </div>
-                  <div className="relative flex justify-center text-[11px] uppercase">
-                    <span className="bg-[#f7f4ea] px-2 text-[#786f62] font-bold">or continue with</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-center w-full min-h-[40px] items-center">
-                  {googleLoading ? (
-                    <div className="text-xs font-bold text-[#194a32] animate-pulse">
-                      Signing in with Google...
+                  <button
+                    type="button"
+                    onClick={handleCancelTwoFa}
+                    className="w-full text-center text-xs font-bold text-[#665e52] hover:text-[#194a32] hover:underline pt-2"
+                  >
+                    ← Back to Standard Sign In
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                  <div>
+                    <label className="block text-xs font-bold text-[#4a433b] mb-1.5" htmlFor="login-email">
+                      Email or Phone Number
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
+                        📱
+                      </span>
+                      <input
+                        id="login-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="9876543210 or email@domain.com"
+                        className="input text-xs pl-10 bg-[#fffdf7]"
+                        required
+                      />
                     </div>
-                  ) : (
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      shape="pill"
-                      theme="outline"
-                      text="continue_with"
-                      width="320"
-                    />
-                  )}
-                </div>
-              </form>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="block text-xs font-bold text-[#4a433b]" htmlFor="login-password">
+                        Password
+                      </label>
+                      <Link to="/forgot-password" className="text-xs text-[#194a32] font-bold hover:underline">
+                        Forgot Password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
+                        🔒
+                      </span>
+                      <input
+                        id="login-password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="input text-xs pl-10 pr-10 bg-[#fffdf7]"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 text-xs font-bold hover:text-stone-800"
+                      >
+                        {showPassword ? '🙈' : '👁️'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || googleLoading}
+                    className="w-full btn-forest text-white font-bold py-3.5 text-xs rounded-xl shadow-md flex items-center justify-center gap-2 mt-2"
+                    id="login-submit"
+                  >
+                    {loading ? (
+                      <span>Signing In…</span>
+                    ) : (
+                      <>
+                        <span>Sign In to Khata</span>
+                        <span>→</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-[#d8cfbe]" />
+                    </div>
+                    <div className="relative flex justify-center text-[11px] uppercase">
+                      <span className="bg-[#f7f4ea] px-2 text-[#786f62] font-bold">or continue with</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center w-full min-h-[40px] items-center">
+                    {googleLoading ? (
+                      <div className="text-xs font-bold text-[#194a32] animate-pulse">
+                        Signing in with Google...
+                      </div>
+                    ) : (
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        shape="pill"
+                        theme="outline"
+                        text="continue_with"
+                        width="320"
+                      />
+                    )}
+                  </div>
+                </form>
+              )}
             </div>
 
             <div className="pt-6 mt-6 border-t border-[#e5dec8] text-center">

@@ -8,6 +8,7 @@ interface AuthContextValue {
   isLoggedIn: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthTokens>;
+  verify2FA: (preAuthToken: string, code: string) => Promise<AuthTokens>;
   loginWithGoogle: (googleToken: string) => Promise<AuthTokens>;
   register: (data: { email: string; name: string; phone?: string; password: string; password2: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -42,6 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await authService.login(email, password);
+    if (res.access) {
+      localStorage.setItem('ledger_access_token', res.access);
+    }
+    if (res.refresh) {
+      localStorage.setItem('ledger_refresh_token', res.refresh);
+    }
+    if (res.user) {
+      setUser(res.user);
+    }
+    return res;
+  }, []);
+
+  const verify2FA = useCallback(async (preAuthToken: string, code: string) => {
+    const res = await authService.verify2FA(preAuthToken, code);
     if (res.access) {
       localStorage.setItem('ledger_access_token', res.access);
     }
@@ -93,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, login, loginWithGoogle, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, login, verify2FA, loginWithGoogle, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

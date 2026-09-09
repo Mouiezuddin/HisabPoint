@@ -105,9 +105,12 @@ export interface ApiError {
 }
 
 export interface AuthTokens {
-  access: string;
-  refresh: string;
-  user: User;
+  access?: string;
+  refresh?: string;
+  user?: User;
+  '2fa_required'?: boolean;
+  pre_auth_token?: string;
+  message?: string;
 }
 
 export interface CreateCustomerData {

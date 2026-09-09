@@ -176,10 +176,22 @@ export function SecurityModal({ isOpen, onClose, onOpenChangePassword }: Securit
         {/* STEP 2: Setup 2FA Flow */}
         {step === 'setup' && setupData && (
           <form onSubmit={handleConfirm2FA} className="space-y-4">
-            <div className="bg-parchment-50 rounded-xl p-3 border border-parchment-300 space-y-2 text-center">
-              <p className="text-xs text-stone-700 font-medium">
-                Enter this secret key in Google Authenticator or Authy:
+            <div className="bg-parchment-50 rounded-xl p-3.5 border border-parchment-300 space-y-3 text-center">
+              <p className="text-xs text-stone-700 font-semibold">
+                Scan this QR code with Google Authenticator, Authy, or Microsoft Authenticator:
               </p>
+
+              <div className="flex justify-center my-1">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(setupData.otpauth_url)}`}
+                  alt="2FA QR Code"
+                  className="w-36 h-36 rounded-xl border-2 border-parchment-300 shadow-xs bg-white p-2"
+                />
+              </div>
+
+              <div className="text-[11px] text-stone-500 font-medium">
+                Or enter this secret key manually:
+              </div>
               <div className="bg-stone-100 px-3 py-2 rounded-lg font-mono text-xs font-black tracking-widest text-forest-950 border border-stone-200 select-all break-all">
                 {setupData.secret}
               </div>
@@ -189,7 +201,7 @@ export function SecurityModal({ isOpen, onClose, onOpenChangePassword }: Securit
                   navigator.clipboard.writeText(setupData.secret);
                   showToast('Secret key copied!', 'success');
                 }}
-                className="text-[11px] font-bold text-forest-900 hover:underline"
+                className="text-[11px] font-bold text-forest-900 hover:underline inline-block"
               >
                 📋 Copy Secret Key
               </button>
