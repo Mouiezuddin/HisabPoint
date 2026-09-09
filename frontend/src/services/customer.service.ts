@@ -35,4 +35,9 @@ export const customerService = {
     const res = await api.post(`/customers/${id}/restore/`);
     return res.data;
   },
+
+  async delete(id: string): Promise<{ message?: string }> {
+    const res = await api.delete(`/customers/${id}/`);
+    return res.data;
+  },
 };

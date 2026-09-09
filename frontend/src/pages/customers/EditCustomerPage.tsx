@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerService } from '../../services/customer.service';
 import { LoadingState } from '../../components/ui/LedgerComponents';
+import { ConfirmDialog } from '../../components/ui/Modal';
 import { showToast } from '../../components/ui/Toast';
 import { getErrorMessage } from '../../utils/format';
 
@@ -12,6 +13,7 @@ export function EditCustomerPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ name: '', phone: '', address: '', notes: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { data: customer, isLoading } = useQuery({
     queryKey: ['customer', id],
@@ -37,6 +39,19 @@ export function EditCustomerPage() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       showToast('Customer updated.', 'success');
       navigate(`/customers/${id}`, { replace: true });
+    },
+    onError: (err) => showToast(getErrorMessage(err), 'error'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => customerService.delete(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      showToast(`${customer?.name || 'Customer'} deleted.`, 'success');
+      navigate('/customers', { replace: true });
     },
     onError: (err) => showToast(getErrorMessage(err), 'error'),
   });
@@ -137,6 +152,44 @@ export function EditCustomerPage() {
           </button>
         </form>
       </div>
+
+      {/* Danger Zone: Delete Customer */}
+      <div className="bg-rose-50/80 rounded-2xl p-6 border-2 border-rose-200 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-bold text-rose-900 font-serif flex items-center gap-1.5">
+              <span>⚠️</span>
+              <span>Danger Zone</span>
+            </h2>
+            <p className="text-xs text-rose-700 mt-1">
+              Permanently delete this customer and all their ledger transaction history.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="bg-rose-700 hover:bg-rose-800 text-white font-bold px-4 py-2.5 text-xs rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap self-start sm:self-auto"
+            id="btn-delete-customer-danger"
+          >
+            🗑️ Delete Customer
+          </button>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => deleteMutation.mutate()}
+        loading={deleteMutation.isPending}
+        title="Delete customer permanently?"
+        message={
+          customer?.balance_status === 'due'
+            ? `⚠️ WARNING: ${customer.name} has an outstanding due balance of ₹${customer.balance}. Deleting this customer will permanently erase this customer and all associated ledger transaction history. This action cannot be undone.`
+            : `Are you sure you want to delete ${customer?.name || 'this customer'}? This will permanently remove the customer and all associated ledger transactions. This action cannot be undone.`
+        }
+        confirmLabel="Delete Permanently"
+        confirmVariant="danger"
+      />
     </div>
   );
 }

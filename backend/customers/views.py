@@ -1,9 +1,13 @@
 """Customer views — all queries filter by request.user."""
+from typing import cast, Any
+from django.db import transaction
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 
+from ledger.models import Transaction
 from .models import Customer, CustomerStatus
 from .serializers import CustomerSerializer, CustomerListSerializer
 from .services import get_customer_for_user, annotate_customer_balance
@@ -15,23 +19,26 @@ class CustomerListCreateView(generics.ListCreateAPIView):
     POST /api/customers/  — create new customer
     """
 
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Any:
         if self.request.method == "GET":
             return CustomerListSerializer
         return CustomerSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> Any:
         user = self.request.user
-        include_archived = self.request.query_params.get("archived") == "true"
+        req = cast(Request, self.request)
+        include_archived = req.query_params.get("archived") == "true"
 
         if include_archived:
             qs = Customer.objects.filter(user=user)
         else:
             qs = Customer.objects.filter(user=user, status=CustomerStatus.ACTIVE)
 
-        search = self.request.query_params.get("search", "").strip()
+        search = req.query_params.get("search", "").strip()
         if search:
             from django.db.models import Q
             qs = qs.filter(
@@ -44,22 +51,36 @@ class CustomerListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
-class CustomerDetailView(generics.RetrieveUpdateAPIView):
+class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    GET   /api/customers/{id}/  — customer detail with balance
-    PATCH /api/customers/{id}/  — update customer info
+    GET    /api/customers/{id}/  — customer detail with balance
+    PATCH  /api/customers/{id}/  — update customer info
+    DELETE /api/customers/{id}/  — delete customer and all associated records
     """
 
+    queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
+    def get_object(self) -> Any:
         try:
             qs = annotate_customer_balance(Customer.objects.filter(user=self.request.user))
             return qs.get(pk=self.kwargs["pk"])
         except Customer.DoesNotExist:
             from rest_framework.exceptions import NotFound
             raise NotFound("Customer not found.")
+
+    def destroy(self, request, *args, **kwargs):
+        customer = self.get_object()
+        customer_name = customer.name
+        with transaction.atomic():
+            # Delete associated transactions first to prevent django.db.models.ProtectedError
+            Transaction.objects.filter(customer=customer).delete()
+            customer.delete()
+        return Response(
+            {"message": f"Customer '{customer_name}' and all associated records deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 @api_view(["POST"])

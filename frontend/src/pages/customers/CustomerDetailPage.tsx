@@ -22,6 +22,7 @@ export function CustomerDetailPage() {
   const [filterType, setFilterType] = useState<'all' | 'credit' | 'payment'>('all');
   const [quickTxnModal, setQuickTxnModal] = useState<{ open: boolean; type?: 'credit' | 'payment' }>({ open: false });
   const [showArchive, setShowArchive] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showUpiModal, setShowUpiModal] = useState(false);
 
@@ -57,6 +58,19 @@ export function CustomerDetailPage() {
     onError: (err) => showToast(getErrorMessage(err), 'error'),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => customerService.delete(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      showToast(`${customer?.name} deleted.`, 'success');
+      navigate('/customers', { replace: true });
+    },
+    onError: (err) => showToast(getErrorMessage(err), 'error'),
+  });
+
   if (loadingCustomer) return <LoadingState message="Opening customer ledger page…" />;
   if (customerError || !customer) return <ErrorState message="Customer not found." onRetry={refetchCustomer} />;
 
@@ -79,12 +93,22 @@ export function CustomerDetailPage() {
           <span>←</span>
           <span>Back</span>
         </button>
-        <button
-          onClick={() => navigate(`/customers/${id}/edit`)}
-          className="text-xs font-bold text-stone-600 hover:underline"
-        >
-          Edit Customer
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(`/customers/${id}/edit`)}
+            className="text-xs font-bold text-stone-600 hover:underline"
+          >
+            Edit Customer
+          </button>
+          <button
+            onClick={() => setShowDelete(true)}
+            className="text-xs font-bold text-rose-700 hover:text-rose-900 hover:underline flex items-center gap-1"
+            id="btn-delete-customer-top"
+          >
+            <span>🗑️</span>
+            <span>Delete</span>
+          </button>
+        </div>
       </div>
 
       {/* Customer Header Info & Balance Card */}
@@ -141,6 +165,15 @@ export function CustomerDetailPage() {
               title="Edit Details"
             >
               <span>✏️</span>
+            </button>
+            <button
+              onClick={() => setShowDelete(true)}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold px-3 py-2 rounded-xl border border-rose-200 shadow-xs flex items-center justify-center gap-1 transition-colors"
+              title="Delete Customer"
+              id="btn-delete-customer-action"
+            >
+              <span>🗑️</span>
+              <span className="hidden sm:inline">Delete</span>
             </button>
           </div>
 
@@ -317,6 +350,22 @@ export function CustomerDetailPage() {
         title="Archive customer?"
         message={`Archive ${customer.name}? Financial records remain completely intact and auditable.`}
         confirmLabel="Archive"
+        confirmVariant="danger"
+      />
+
+      {/* Delete Customer Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={showDelete}
+        onClose={() => setShowDelete(false)}
+        onConfirm={() => deleteMutation.mutate()}
+        loading={deleteMutation.isPending}
+        title="Delete customer permanently?"
+        message={
+          isDue
+            ? `⚠️ WARNING: ${customer.name} has an outstanding due balance of ₹${customer.balance}. Deleting this customer will permanently erase this customer and all associated ledger transaction history. This action cannot be undone.`
+            : `Are you sure you want to delete ${customer.name}? This will permanently remove the customer and all associated ledger transactions. This action cannot be undone.`
+        }
+        confirmLabel="Delete Permanently"
         confirmVariant="danger"
       />
     </div>

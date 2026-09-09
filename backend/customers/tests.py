@@ -95,3 +95,52 @@ class CustomerTestCase(TestCase):
         names = {r["name"] for r in results2}
         self.assertEqual(names, {"Active John", "Archived John"})
 
+    def test_delete_customer_without_transactions(self):
+        from rest_framework.test import APIClient
+        from rest_framework import status
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        customer = Customer.objects.create(user=self.user, name="Delete Me")
+        res = client.delete(f"/api/customers/{customer.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(Customer.objects.filter(id=customer.id).exists())
+
+    def test_delete_customer_with_transactions(self):
+        from datetime import date
+        from rest_framework.test import APIClient
+        from rest_framework import status
+        from ledger.models import Transaction, TransactionType
+        from ledger.services import create_transaction
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        customer = Customer.objects.create(user=self.user, name="Delete With Txns")
+        create_transaction(customer, TransactionType.CREDIT, "500", "Items", date.today(), self.user)
+        create_transaction(customer, TransactionType.PAYMENT, "200", "Cash", date.today(), self.user)
+
+        self.assertEqual(Transaction.objects.filter(customer=customer).count(), 2)
+
+        res = client.delete(f"/api/customers/{customer.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(Customer.objects.filter(id=customer.id).exists())
+        self.assertEqual(Transaction.objects.filter(customer=customer).count(), 0)
+
+    def test_delete_customer_wrong_user_raises_404(self):
+        from rest_framework.test import APIClient
+        from rest_framework import status
+
+        other_user = User.objects.create_user(
+            email="other2@test.com", name="Other User", password="testpass123"
+        )
+        other_customer = Customer.objects.create(user=other_user, name="Protected Customer")
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        res = client.delete(f"/api/customers/{other_customer.id}/")
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Customer.objects.filter(id=other_customer.id).exists())
+
