@@ -6,15 +6,24 @@ import { usePWA } from '../features/pwa/usePWA';
 import { InstallAppModal } from '../components/pwa/InstallAppModal';
 import { ConfirmDialog } from '../components/ui/Modal';
 import { showToast } from '../components/ui/Toast';
+import { ChangePasswordModal } from '../components/settings/ChangePasswordModal';
+import { EditProfileModal } from '../components/settings/EditProfileModal';
+import { SecurityModal } from '../components/settings/SecurityModal';
+import { HelpSupportModal } from '../components/settings/HelpSupportModal';
 
 export function SettingsPage() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { isInstalled, isIOS, promptInstall } = usePWA();
   const navigate = useNavigate();
+
   const [showLogout, setShowLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -49,10 +58,21 @@ export function SettingsPage() {
 
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
-            onClick={() => showToast('Password change form active.', 'info')}
-            className="w-full sm:w-auto btn-parchment-bevel px-6 py-2.5 text-xs font-bold rounded-xl"
+            onClick={() => setShowProfileModal(true)}
+            className="w-full sm:w-auto btn-parchment-bevel px-5 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
+            id="btn-edit-profile-header"
           >
-            Change Password
+            <span>✏️</span>
+            <span>Edit Profile</span>
+          </button>
+
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="w-full sm:w-auto btn-parchment-bevel px-5 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
+            id="btn-change-password-header"
+          >
+            <span>🔒</span>
+            <span>Change Password</span>
           </button>
 
           <button
@@ -110,38 +130,71 @@ export function SettingsPage() {
         <SettingsRow
           icon="👤"
           title="Profile & Account"
-          subtitle="Manage personal contact and login options"
-          onClick={() => showToast('Profile info displayed above.', 'info')}
+          subtitle="Manage personal contact and login details"
+          onClick={() => setShowProfileModal(true)}
         />
         <SettingsRow
           icon="🔒"
-          title="Security"
-          subtitle="Password and session security"
-          onClick={() => showToast('Account security active.', 'info')}
+          title="Security & 2FA"
+          subtitle="Password, Two-Factor Authentication and recovery codes"
+          onClick={() => setShowSecurityModal(true)}
         />
         <SettingsRow
           icon="🔔"
           title="App Notifications"
           subtitle="Daily summary and due payment alerts"
-          onClick={() => showToast('Notifications enabled.', 'info')}
+          onClick={async () => {
+            if ('Notification' in window) {
+              const permission = await Notification.requestPermission();
+              if (permission === 'granted') {
+                showToast('Push notifications enabled for payment reminders.', 'success');
+              } else {
+                showToast('Notification permission not granted.', 'info');
+              }
+            } else {
+              showToast('Notifications are enabled on your account.', 'info');
+            }
+          }}
         />
         <SettingsRow
           icon="🌐"
           title="Language"
           subtitle="English / हिन्दी"
-          onClick={() => showToast('Language set to English / Hindi.', 'info')}
+          onClick={() => showToast('Current language is English (Hindi localization active for khata terms).', 'info')}
         />
         <SettingsRow
           icon="❓"
           title="Help & Support"
           subtitle="FAQ and customer care contact"
-          onClick={() => showToast('HisabPoint Support: support@hisabpoint.com', 'info')}
+          onClick={() => setShowHelpModal(true)}
         />
       </div>
 
+      {/* Modals */}
       <InstallAppModal
         isOpen={showInstallModal}
         onClose={() => setShowInstallModal(false)}
+      />
+
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
+
+      <EditProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
+
+      <SecurityModal
+        isOpen={showSecurityModal}
+        onClose={() => setShowSecurityModal(false)}
+        onOpenChangePassword={() => setShowPasswordModal(true)}
+      />
+
+      <HelpSupportModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
       />
 
       <ConfirmDialog
@@ -175,3 +228,4 @@ function SettingsRow({ icon, title, subtitle, onClick }: { icon: string; title: 
     </div>
   );
 }
+

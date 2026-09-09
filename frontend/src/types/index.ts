@@ -5,6 +5,8 @@ export interface User {
   email: string;
   name: string;
   phone: string;
+  is_2fa_enabled?: boolean;
+  is_email_verified?: boolean;
   created_at: string;
 }
 

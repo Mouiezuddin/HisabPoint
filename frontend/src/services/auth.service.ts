@@ -52,4 +52,20 @@ export const authService = {
     const res = await api.patch('/business/profile/', data);
     return res.data;
   },
+
+  async setup2FA(): Promise<{ secret: string; otpauth_url: string; message: string }> {
+    const res = await api.post('/auth/2fa/setup/');
+    return res.data;
+  },
+
+  async confirm2FA(code: string): Promise<{ message: string; recovery_codes: string[] }> {
+    const res = await api.post('/auth/2fa/confirm/', { code });
+    return res.data;
+  },
+
+  async disable2FA(password: string): Promise<{ message: string }> {
+    const res = await api.post('/auth/2fa/disable/', { password });
+    return res.data;
+  },
 };
+
