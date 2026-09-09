@@ -82,9 +82,15 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
 
 export function LoadingState({ message = 'Opening Bahi Khata…' }: { message?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 gap-3" aria-live="polite">
-      <div className="w-10 h-10 border-4 border-parchment-300 border-t-forest-900 rounded-full animate-spin shadow-md" />
-      <span className="text-xs font-bold font-serif text-stone-700">{message}</span>
+    <div className="flex flex-col items-center justify-center py-16 gap-3 select-none" aria-live="polite">
+      <div className="relative w-12 h-14 bg-[#194a32] rounded-lg border-2 border-[#d4af37] shadow-lg flex items-center justify-center animate-bounce">
+        <span className="text-lg">📖</span>
+        <div className="absolute -left-1 top-2 bottom-2 w-1 bg-[#d4af37] rounded-full" />
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-[#d4af37] animate-ping" />
+        <span className="text-xs font-black font-serif text-stone-800 tracking-wide">{message}</span>
+      </div>
     </div>
   );
 }

@@ -1,8 +1,9 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
 import { AppLayout } from '../components/layout/AppLayout'
 import { LoadingState } from '../components/ui/LedgerComponents'
+import { SplashScreen } from '../components/ui/SplashScreen'
 
 // Lazy-loaded Public Landing & Auth pages
 const LandingPage = lazy(() => import('../pages/LandingPage').then(m => ({ default: m.LandingPage })))
@@ -25,21 +26,21 @@ const ReportsPage = lazy(() => import('../pages/ReportsPage').then(m => ({ defau
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isLoading } = useAuth()
-  if (isLoading) return <LoadingState message="Loading HisabPoint…" />
+  if (isLoading) return <LoadingState message="Opening Bahi Khata…" />
   if (!isLoggedIn) return <Navigate to="/" replace />
   return <>{children}</>
 }
 
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isLoading } = useAuth()
-  if (isLoading) return <LoadingState message="Loading HisabPoint…" />
+  if (isLoading) return <LoadingState message="Opening Bahi Khata…" />
   if (isLoggedIn) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
 function RootRoute() {
   const { isLoggedIn, isLoading } = useAuth()
-  if (isLoading) return <LoadingState message="Loading HisabPoint…" />
+  if (isLoading) return <LoadingState message="Opening Bahi Khata…" />
   if (isLoggedIn) {
     return (
       <AppLayout>
@@ -51,9 +52,19 @@ function RootRoute() {
 }
 
 export function AppRoutes() {
+  const { isLoading } = useAuth()
+  const [showSplash, setShowSplash] = useState(true)
+
   return (
-    <Suspense fallback={<LoadingState message="Loading HisabPoint…" />}>
-      <Routes>
+    <>
+      {showSplash && (
+        <SplashScreen
+          isLoading={isLoading}
+          onFinish={() => setShowSplash(false)}
+        />
+      )}
+      <Suspense fallback={<LoadingState message="Opening Bahi Khata…" />}>
+        <Routes>
         {/* Root Route: Landing page if unauthenticated, Dashboard if logged in */}
         <Route path="/" element={<RootRoute />} />
 
@@ -123,5 +134,6 @@ export function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+  </>
   )
 }
