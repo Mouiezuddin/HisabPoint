@@ -1,5 +1,5 @@
 """Authentication views — HttpOnly cookies, 2FA, Email verification, Rate throttling."""
-from django.contrib.auth import get_user_model
+from typing import cast, Any
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth.tokens import default_token_generator
@@ -16,6 +16,7 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
+from .models import User
 from .serializers import (
     RegisterSerializer,
     UserProfileSerializer,
@@ -29,8 +30,6 @@ from .totp import (
     generate_recovery_codes,
 )
 from businesses.services import get_or_create_business_profile
-
-User = get_user_model()
 
 
 # ── Rate Throttling Classes ───────────────────────────────────────────────
@@ -117,7 +116,7 @@ class RegisterView(generics.CreateAPIView):
 
         get_or_create_business_profile(user)
 
-        refresh = RefreshToken.for_user(user)
+        refresh = cast(RefreshToken, RefreshToken.for_user(user))
         res = Response(
             {
                 "message": "Account created successfully.",
@@ -150,7 +149,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         # If user has 2FA enabled, issue a temporary pre-auth challenge token
         if user.is_2fa_enabled:
-            pre_auth_token = RefreshToken.for_user(user)
+            pre_auth_token = cast(RefreshToken, RefreshToken.for_user(user))
             pre_auth_token["2fa_pending"] = True
             return Response(
                 {
@@ -213,10 +212,11 @@ def logout_view(request):
 class ProfileView(generics.RetrieveUpdateAPIView):
     """GET/PATCH /api/auth/profile/ — view and update own profile."""
 
+    queryset = User.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
+    def get_object(self) -> Any:
         return self.request.user
 
 
@@ -309,7 +309,7 @@ def password_reset_confirm_view(request):
 @permission_classes([IsAuthenticated])
 def setup_2fa_view(request):
     """POST /api/auth/2fa/setup/ — generate secret & otpauth URL."""
-    user = request.user
+    user = cast(User, request.user)
     if user.is_2fa_enabled:
         return Response({"message": "2FA is already enabled."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -331,7 +331,7 @@ def setup_2fa_view(request):
 @throttle_classes([TwoFactorRateThrottle])
 def confirm_2fa_view(request):
     """POST /api/auth/2fa/confirm/ — verify code and generate recovery codes."""
-    user = request.user
+    user = cast(User, request.user)
     code = request.data.get("code", "").strip()
 
     if not user.totp_secret:
@@ -380,7 +380,7 @@ def verify_2fa_view(request):
     if not is_valid:
         return Response({"message": "Invalid 2FA code or recovery code."}, status=status.HTTP_400_BAD_REQUEST)
 
-    refresh = RefreshToken.for_user(user)
+    refresh = cast(RefreshToken, RefreshToken.for_user(user))
     response = Response(
         {
             "message": "2FA verification successful.",
@@ -397,7 +397,7 @@ def verify_2fa_view(request):
 @permission_classes([IsAuthenticated])
 def disable_2fa_view(request):
     """POST /api/auth/2fa/disable/ — disable 2FA with current password."""
-    user = request.user
+    user = cast(User, request.user)
     password = request.data.get("password", "")
 
     if not user.check_password(password):
@@ -417,7 +417,7 @@ def disable_2fa_view(request):
 @throttle_classes([EmailVerificationRateThrottle])
 def send_email_verification_view(request):
     """POST /api/auth/email/send-verification/ — send email verification link."""
-    user = request.user
+    user = cast(User, request.user)
     if user.is_email_verified:
         return Response({"message": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -518,7 +518,7 @@ def google_auth_view(request):
                 user.save(update_fields=["is_email_verified"])
             get_or_create_business_profile(user)
 
-        refresh = RefreshToken.for_user(user)
+        refresh = cast(RefreshToken, RefreshToken.for_user(user))
         resp_data = {
             "access": str(refresh.access_token),
             "refresh": str(refresh),
