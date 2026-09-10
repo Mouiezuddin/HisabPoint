@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /customers/
+Disallow: /transactions/
+Disallow: /reports
+Disallow: /settings
+
+Sitemap: https://hisab-point.vercel.app/sitemap.xml
