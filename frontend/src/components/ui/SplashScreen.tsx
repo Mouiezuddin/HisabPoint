@@ -36,13 +36,13 @@ export function SplashScreen({ isLoading = false, onFinish }: SplashScreenProps)
     return () => clearInterval(timer);
   }, []);
 
-  // Orchestrate animation timeline
+  // Orchestrate animation timeline — crisp, snappy, high-performance
   useEffect(() => {
-    const t1 = setTimeout(() => setStage('unlatch'), 400);
-    const t2 = setTimeout(() => setStage('opening'), 800);
+    const t1 = setTimeout(() => setStage('unlatch'), 150);
+    const t2 = setTimeout(() => setStage('opening'), 350);
     const t3 = setTimeout(() => {
       setMinTimeElapsed(true);
-    }, 1400);
+    }, 600);
 
     return () => {
       clearTimeout(t1);
@@ -58,7 +58,7 @@ export function SplashScreen({ isLoading = false, onFinish }: SplashScreenProps)
       const t = setTimeout(() => {
         setStage('done');
         onFinish?.();
-      }, 500);
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [minTimeElapsed, isLoading, stage, onFinish]);

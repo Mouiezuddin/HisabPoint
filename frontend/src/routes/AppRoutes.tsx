@@ -53,14 +53,27 @@ function RootRoute() {
 
 export function AppRoutes() {
   const { isLoading } = useAuth()
-  const [showSplash, setShowSplash] = useState(true)
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      return !sessionStorage.getItem('hisab_splash_shown')
+    } catch {
+      return false
+    }
+  })
+
+  const handleFinishSplash = () => {
+    try {
+      sessionStorage.setItem('hisab_splash_shown', '1')
+    } catch {}
+    setShowSplash(false)
+  }
 
   return (
     <>
       {showSplash && (
         <SplashScreen
           isLoading={isLoading}
-          onFinish={() => setShowSplash(false)}
+          onFinish={handleFinishSplash}
         />
       )}
       <Suspense fallback={<LoadingState message="Opening Bahi Khata…" />}>

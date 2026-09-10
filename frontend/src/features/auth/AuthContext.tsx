@@ -18,20 +18,47 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const cached = localStorage.getItem('ledger_user_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isLoading, setIsLoading] = useState(() => {
+    const token = localStorage.getItem('ledger_access_token');
+    const cached = localStorage.getItem('ledger_user_cache');
+    // If we have both token and cached profile, render immediately!
+    if (token && cached) return false;
+    // If no token, user is unauthenticated, no blocking needed
+    if (!token) return false;
+    return true;
+  });
+
+  const saveUser = useCallback((u: User | null) => {
+    setUser(u);
+    if (u) {
+      try {
+        localStorage.setItem('ledger_user_cache', JSON.stringify(u));
+      } catch {}
+    } else {
+      localStorage.removeItem('ledger_user_cache');
+    }
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
       const profile = await authService.getProfile();
-      setUser(profile);
+      saveUser(profile);
     } catch {
       clearTokens();
-      setUser(null);
+      saveUser(null);
     }
-  }, []);
+  }, [saveUser]);
 
-  // On mount, only verify profile if an access token exists in storage
+  // On mount, verify profile in background without freezing UI
   useEffect(() => {
     const token = localStorage.getItem('ledger_access_token');
     if (!token) {
@@ -50,10 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('ledger_refresh_token', res.refresh);
     }
     if (res.user) {
-      setUser(res.user);
+      saveUser(res.user);
     }
     return res;
-  }, []);
+  }, [saveUser]);
 
   const verify2FA = useCallback(async (preAuthToken: string, code: string) => {
     const res = await authService.verify2FA(preAuthToken, code);
@@ -64,10 +91,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('ledger_refresh_token', res.refresh);
     }
     if (res.user) {
-      setUser(res.user);
+      saveUser(res.user);
     }
     return res;
-  }, []);
+  }, [saveUser]);
 
   const loginWithGoogle = useCallback(async (googleToken: string) => {
     const res = await authService.googleAuth(googleToken);
@@ -78,10 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('ledger_refresh_token', res.refresh);
     }
     if (res.user) {
-      setUser(res.user);
+      saveUser(res.user);
     }
     return res;
-  }, []);
+  }, [saveUser]);
 
   const register = useCallback(async (data: { email: string; name: string; phone?: string; password: string; password2: string }) => {
     const result = await authService.register(data);
@@ -92,9 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('ledger_refresh_token', result.refresh);
     }
     if (result.user) {
-      setUser(result.user);
+      saveUser(result.user);
     }
-  }, []);
+  }, [saveUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -103,9 +130,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore logout API errors
     } finally {
       clearTokens();
-      setUser(null);
+      saveUser(null);
     }
-  }, []);
+  }, [saveUser]);
 
   return (
     <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, login, verify2FA, loginWithGoogle, register, logout, refreshUser }}>
