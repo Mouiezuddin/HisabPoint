@@ -12,3 +12,4 @@ whitenoise==6.8.2
 dj-database-url==2.3.0
 google-auth>=2.20.0
 requests>=2.31.0
+sentry-sdk>=2.0.0

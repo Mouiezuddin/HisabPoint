@@ -10,7 +10,15 @@ from django.conf.urls.static import static
 # pyrefly: ignore [missing-import]
 from common.views import api_root_view, health_check_view
 
+
+def sentry_debug_error(request):
+    """Debug view to verify Sentry error monitoring."""
+    division_by_zero = 1 / 0
+    return division_by_zero
+
+
 urlpatterns = [
+    path("sentry-debug/", sentry_debug_error, name="sentry-debug"),
     path("", api_root_view, name="api-root"),
     path("api/health/", health_check_view, name="health-check"),
     path("health/", health_check_view, name="health-check-short"),

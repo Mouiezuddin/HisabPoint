@@ -164,3 +164,16 @@ GOOGLE_CLIENT_ID = config(
     "GOOGLE_CLIENT_ID",
     default="936456474682-ilijsok5msld8s17jdiccrddshfuimu0.apps.googleusercontent.com",
 )
+
+# Sentry Error Monitoring & Tracing
+SENTRY_DSN = config("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        send_default_pii=True,
+        traces_sample_rate=1.0 if DEBUG else 0.2,
+    )

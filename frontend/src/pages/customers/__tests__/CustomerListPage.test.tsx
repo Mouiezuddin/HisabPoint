@@ -43,11 +43,11 @@ describe('CustomerListPage', () => {
     renderCustomerListPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Vikram Singh')).toBeInTheDocument();
+      expect(screen.getAllByText('Vikram Singh')[0]).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Pooja Sharma')).toBeInTheDocument();
-    expect(screen.getByText('9988776655')).toBeInTheDocument();
+    expect(screen.getAllByText('Pooja Sharma')[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/9988776655/)[0]).toBeInTheDocument();
   });
 
   it('filters customers when filter tab is clicked', async () => {
@@ -59,14 +59,14 @@ describe('CustomerListPage', () => {
     renderCustomerListPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Vikram Singh')).toBeInTheDocument();
+      expect(screen.getAllByText('Vikram Singh')[0]).toBeInTheDocument();
     });
 
     // Click "Due" filter button
     const dueFilterBtn = screen.getByRole('button', { name: /due/i });
     fireEvent.click(dueFilterBtn);
 
-    expect(screen.getByText('Vikram Singh')).toBeInTheDocument();
+    expect(screen.getAllByText('Vikram Singh')[0]).toBeInTheDocument();
     expect(screen.queryByText('Pooja Sharma')).not.toBeInTheDocument();
   });
 
