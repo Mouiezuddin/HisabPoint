@@ -33,11 +33,14 @@ const mobileNavItemsLeft = [
 
 const mobileNavItemsRight = [
   {
-    to: '/activity',
-    label: 'Activity',
+    to: '/invoices',
+    label: 'Bills',
     icon: (active: boolean) => (
       <svg className={`w-5 h-5 ${active ? 'text-gold-400 font-bold' : 'text-amber-200/60'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="8" y1="13" x2="16" y2="13" />
+        <line x1="8" y1="17" x2="16" y2="17" />
       </svg>
     ),
   },
@@ -151,6 +154,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/invoices/new')}
+              className="flex items-center gap-1 bg-gradient-to-b from-gold-400 to-gold-600 hover:from-gold-300 hover:to-gold-500 text-forest-950 font-black text-xs px-2.5 py-1.5 rounded-lg border border-amber-300 shadow-sm cursor-pointer active:scale-95"
+              id="btn-header-new-bill-mobile"
+              title="Create New Bill"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>Bill</span>
+            </button>
+
             <button
               onClick={toggleTheme}
               className="p-2 min-h-[40px] min-w-[40px] bg-forest-900/90 border border-gold-500/50 rounded-full text-xs font-bold text-gold-300 flex items-center justify-center cursor-pointer active:scale-95"

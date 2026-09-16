@@ -160,6 +160,13 @@ export function CustomerDetailPage() {
               <span>💳 UPI QR</span>
             </button>
             <button
+              onClick={() => navigate(`/invoices/new?customer=${id}`)}
+              className="flex-1 sm:flex-none bg-forest-800 hover:bg-forest-900 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95"
+              id="btn-new-bill-customer"
+            >
+              <span>📋 + New Bill</span>
+            </button>
+            <button
               onClick={() => navigate(`/customers/${id}/edit`)}
               className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3 py-2 rounded-xl border border-parchment-300 shadow-xs flex items-center justify-center gap-1"
               title="Edit Details"

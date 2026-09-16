@@ -90,6 +90,7 @@ export interface DashboardData {
     balance: string;
     last_transaction?: string;
   }>;
+  recent_transactions?: Transaction[];
 }
 
 export interface PaginatedResponse<T> {

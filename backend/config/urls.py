@@ -8,13 +8,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 # pyrefly: ignore [missing-import]
+from django.http import HttpRequest, HttpResponse
+
+# pyrefly: ignore [missing-import]
 from common.views import api_root_view, health_check_view
 
 
-def sentry_debug_error(request):
+def sentry_debug_error(request: HttpRequest) -> HttpResponse:
     """Debug view to verify Sentry error monitoring."""
-    division_by_zero = 1 / 0
-    return division_by_zero
+    raise ZeroDivisionError("Sentry test error: intentional division by zero")
 
 
 urlpatterns = [
@@ -29,12 +31,14 @@ urlpatterns = [
     path("api/customers/", include("customers.urls")),
     path("api/transactions/", include("ledger.urls")),
     path("api/dashboard/", include("reports.urls")),
+    path("api/invoices/", include("billing.urls")),
     # Direct fallback endpoints without /api/ prefix
     path("auth/", include("accounts.urls")),
     path("business/", include("businesses.urls")),
     path("customers/", include("customers.urls")),
     path("transactions/", include("ledger.urls")),
     path("dashboard/", include("reports.urls")),
+    path("invoices/", include("billing.urls")),
 ]
 
 

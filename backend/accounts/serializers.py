@@ -1,10 +1,10 @@
 """Serializers for authentication and user profile."""
-from django.contrib.auth import get_user_model
+from typing import Any
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-User = get_user_model()
+from .models import User
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -44,8 +44,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Extend token response to include basic user info."""
 
-    def validate(self, attrs):
-        data = super().validate(attrs)
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        data: dict[str, Any] = dict(super().validate(attrs))
         data["user"] = UserProfileSerializer(self.user).data
         return data
 

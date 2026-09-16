@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerService } from '../../services/customer.service';
 import { ledgerService } from '../../services/ledger.service';
@@ -20,6 +21,7 @@ export function QuickTransactionModal({
   defaultCustomerId,
   defaultType = 'credit',
 }: QuickTransactionModalProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedCustomerId, setSelectedCustomerId] = useState(defaultCustomerId || '');
   const [txnType, setTxnType] = useState<'credit' | 'payment'>(defaultType);
@@ -41,6 +43,7 @@ export function QuickTransactionModal({
       ledgerService.createTransaction(selectedCustomerId, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['customer', selectedCustomerId] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -164,11 +167,30 @@ export function QuickTransactionModal({
           <button
             type="submit"
             disabled={mutation.isPending}
-            className={`w-full text-white font-bold py-3 rounded-xl shadow-md text-xs ${
+            className={`w-full text-white font-bold py-3 rounded-xl shadow-md text-xs cursor-pointer ${
               isCredit ? 'bg-rose-800 hover:bg-rose-900' : 'bg-emerald-800 hover:bg-emerald-900'
             }`}
           >
             {mutation.isPending ? 'Saving Entry…' : 'Save Transaction'}
+          </button>
+        </div>
+
+        {/* Shortcut to full bill generator */}
+        <div className="pt-1 text-center border-t border-parchment-300">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              if (selectedCustomerId) {
+                navigate(`/invoices/new?customer=${selectedCustomerId}`);
+              } else {
+                navigate('/invoices/new');
+              }
+            }}
+            className="text-[11px] font-bold text-amber-900 hover:text-amber-950 flex items-center justify-center gap-1.5 w-full py-1 hover:underline cursor-pointer"
+          >
+            <span>🧾 Need to generate an itemized bill with GST & print?</span>
+            <span className="text-forest-800 font-black">Create Bill →</span>
           </button>
         </div>
       </form>

@@ -8,12 +8,13 @@ class IsOwner(permissions.BasePermission):
     Works for objects with a `user` or `created_by` field.
     """
 
-    def has_object_permission(self, request, view, obj):
+    # pyrefly: ignore [inconsistent-override]
+    def has_object_permission(self, request, view, obj) -> bool:  # type: ignore[override]
         # Support both direct user ownership and created_by patterns
         if hasattr(obj, "user"):
-            return obj.user == request.user
+            return bool(obj.user == request.user)
         if hasattr(obj, "created_by"):
-            return obj.created_by == request.user
+            return bool(obj.created_by == request.user)
         return False
 
 
@@ -23,7 +24,8 @@ class IsAdminUser(permissions.BasePermission):
     Enforces server-side admin check.
     """
 
-    def has_permission(self, request, view):
+    # pyrefly: ignore [inconsistent-override]
+    def has_permission(self, request, view) -> bool:  # type: ignore[override]
         return bool(
             request.user
             and request.user.is_authenticated

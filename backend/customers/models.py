@@ -37,4 +37,4 @@ class Customer(models.Model):
         ordering = ["name"]
 
     def __str__(self):
-        return f"{self.name} (user: {self.user_id})"
+        return f"{self.name} (user: {self.user.id})"

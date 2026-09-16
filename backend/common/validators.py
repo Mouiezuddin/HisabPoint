@@ -13,6 +13,7 @@ def validate_positive_amount(value):
         raise serializers.ValidationError("Enter a valid amount.")
     if d <= 0:
         raise serializers.ValidationError("Enter an amount greater than ₹0.")
-    if d.as_tuple().exponent < -2:
+    exp = d.as_tuple().exponent
+    if isinstance(exp, int) and exp < -2:
         raise serializers.ValidationError("Amount cannot have more than 2 decimal places.")
     return value

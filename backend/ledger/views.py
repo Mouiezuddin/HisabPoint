@@ -158,11 +158,21 @@ class TransactionListView(generics.ListAPIView):
 
     def get_queryset(self):
         from customers.models import CustomerStatus
+        limit = self.request.query_params.get("limit")
+        limit_val = 100
+        if limit:
+            try:
+                parsed = int(limit)
+                if parsed > 0:
+                    limit_val = min(parsed, 100)
+            except ValueError:
+                pass
+
         return (
             Transaction.objects
             .filter(customer__user=self.request.user, customer__status=CustomerStatus.ACTIVE)
             .select_related("customer", "reversal_of")
             .prefetch_related("reversals")
-            .order_by("-transaction_date", "-created_at")[:100]
+            .order_by("-transaction_date", "-created_at")[:limit_val]
         )
 

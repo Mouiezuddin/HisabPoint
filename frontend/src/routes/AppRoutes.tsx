@@ -23,6 +23,9 @@ const TransactionDetailPage = lazy(() => import('../pages/ledger/TransactionDeta
 const SettingsPage = lazy(() => import('../pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const BusinessProfilePage = lazy(() => import('../pages/BusinessProfilePage').then(m => ({ default: m.BusinessProfilePage })))
 const ReportsPage = lazy(() => import('../pages/ReportsPage').then(m => ({ default: m.ReportsPage })))
+const InvoiceListPage = lazy(() => import('../pages/billing/InvoiceListPage').then(m => ({ default: m.InvoiceListPage })))
+const CreateInvoicePage = lazy(() => import('../pages/billing/CreateInvoicePage').then(m => ({ default: m.CreateInvoicePage })))
+const InvoiceDetailPage = lazy(() => import('../pages/billing/InvoiceDetailPage').then(m => ({ default: m.InvoiceDetailPage })))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isLoading } = useAuth()
@@ -130,6 +133,21 @@ export function AppRoutes() {
         <Route path="/reports" element={
           <ProtectedRoute>
             <AppLayout><ReportsPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/invoices" element={
+          <ProtectedRoute>
+            <AppLayout><InvoiceListPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/invoices/new" element={
+          <ProtectedRoute>
+            <AppLayout><CreateInvoicePage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/invoices/:id" element={
+          <ProtectedRoute>
+            <AppLayout><InvoiceDetailPage /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/settings" element={

@@ -41,8 +41,11 @@ export const ledgerService = {
     return res.data;
   },
 
-  async getAllTransactions(): Promise<Transaction[]> {
-    const res = await api.get('/transactions/');
+  async getAllTransactions(limit?: number | unknown): Promise<Transaction[]> {
+    const limitNum = typeof limit === 'number' ? limit : undefined;
+    const res = await api.get('/transactions/', {
+      params: limitNum ? { limit: limitNum } : undefined,
+    });
     if (res.data.results) return res.data.results;
     return res.data;
   },

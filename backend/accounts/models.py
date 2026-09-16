@@ -23,7 +23,8 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # pyrefly: ignore [inconsistent-override]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # type: ignore[override]
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20, blank=True, default="")
@@ -36,7 +37,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    objects = UserManager()
+    objects: UserManager = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["name"]

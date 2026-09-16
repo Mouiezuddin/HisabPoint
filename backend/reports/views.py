@@ -2,7 +2,8 @@
 from decimal import Decimal
 from datetime import timedelta
 
-from django.db.models import Sum, Max, Q
+from django.db.models import Sum, Count, Max, Q, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -30,71 +31,80 @@ def calculate_net_amount(queryset, target_type):
 def dashboard_view(request):
     """
     GET /api/dashboard/
-    Returns full dashboard metrics matching Hisab UI design.
+    Returns full dashboard metrics matching Hisab UI design in 4-5 optimized queries.
     """
     user = request.user
     today = timezone.localdate()
-
-    # Today's transactions for this user
-    today_txns = Transaction.objects.filter(
-        customer__user=user,
-        transaction_date=today,
-        customer__status=CustomerStatus.ACTIVE,
-    )
-
-    today_given = calculate_net_amount(today_txns, TransactionType.CREDIT)
-    today_received = calculate_net_amount(today_txns, TransactionType.PAYMENT)
-
-    # Current month's transactions
     month_start = today.replace(day=1)
-    month_txns = Transaction.objects.filter(
+
+    output_field = DecimalField(max_digits=12, decimal_places=2)
+    zero = Value(Decimal("0.00"), output_field=output_field)
+
+    # Query 1: Total active customers count (lightweight, no joins)
+    total_customers = Customer.objects.filter(user=user, status=CustomerStatus.ACTIVE).count()
+
+    # Query 2: Single unified aggregation for all period metrics and totals
+    agg = Transaction.objects.filter(
         customer__user=user,
-        transaction_date__gte=month_start,
-        transaction_date__lte=today,
         customer__status=CustomerStatus.ACTIVE,
+    ).aggregate(
+        today_given=Coalesce(Sum("amount", filter=Q(transaction_date=today, type=TransactionType.CREDIT)), zero)
+                   - Coalesce(Sum("amount", filter=Q(transaction_date=today, type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+        today_received=Coalesce(Sum("amount", filter=Q(transaction_date=today, type=TransactionType.PAYMENT)), zero)
+                      - Coalesce(Sum("amount", filter=Q(transaction_date=today, type=TransactionType.REVERSAL, reversal_of__type=TransactionType.PAYMENT)), zero),
+
+        month_sales=Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, type=TransactionType.CREDIT)), zero)
+                   - Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+
+        w1_sales=Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=1, transaction_date__day__lte=7, type=TransactionType.CREDIT)), zero)
+                - Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=1, transaction_date__day__lte=7, type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+
+        w2_sales=Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=8, transaction_date__day__lte=14, type=TransactionType.CREDIT)), zero)
+                - Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=8, transaction_date__day__lte=14, type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+
+        w3_sales=Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=15, transaction_date__day__lte=21, type=TransactionType.CREDIT)), zero)
+                - Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=15, transaction_date__day__lte=21, type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+
+        w4_sales=Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=22, type=TransactionType.CREDIT)), zero)
+                - Coalesce(Sum("amount", filter=Q(transaction_date__gte=month_start, transaction_date__lte=today, transaction_date__day__gte=22, type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+
+        total_given=Coalesce(Sum("amount", filter=Q(type=TransactionType.CREDIT)), zero)
+                   - Coalesce(Sum("amount", filter=Q(type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+        total_received=Coalesce(Sum("amount", filter=Q(type=TransactionType.PAYMENT)), zero)
+                      - Coalesce(Sum("amount", filter=Q(type=TransactionType.REVERSAL, reversal_of__type=TransactionType.PAYMENT)), zero),
+        total_transactions=Count("id", filter=~Q(type=TransactionType.REVERSAL)),
     )
 
-    this_month_sales = calculate_net_amount(month_txns, TransactionType.CREDIT)
-
-    # Weekly breakdown for current month (Weeks 1 to 4)
-    w1_txns = month_txns.filter(transaction_date__day__gte=1, transaction_date__day__lte=7)
-    w2_txns = month_txns.filter(transaction_date__day__gte=8, transaction_date__day__lte=14)
-    w3_txns = month_txns.filter(transaction_date__day__gte=15, transaction_date__day__lte=21)
-    w4_txns = month_txns.filter(transaction_date__day__gte=22)
-
-    week1_sales = calculate_net_amount(w1_txns, TransactionType.CREDIT)
-    week2_sales = calculate_net_amount(w2_txns, TransactionType.CREDIT)
-    week3_sales = calculate_net_amount(w3_txns, TransactionType.CREDIT)
-    week4_sales = calculate_net_amount(w4_txns, TransactionType.CREDIT)
-
-    # All active customers with annotated balances & last transaction date
-    active_customers = annotate_customer_balance(
-        Customer.objects.filter(user=user, status=CustomerStatus.ACTIVE)
-    ).annotate(last_txn_date=Max("transactions__transaction_date"))
-
-    total_customers = active_customers.count()
+    # Query 3: Customers with due, balances and last transaction date (using values to avoid model instantiation overhead)
+    active_customers = (
+        annotate_customer_balance(Customer.objects.filter(user=user, status=CustomerStatus.ACTIVE))
+        .annotate(last_txn_date=Max("transactions__transaction_date"))
+        .values("id", "name", "phone", "_balance", "last_txn_date")
+        .order_by("name")
+    )
 
     customers_with_due = []
     total_due = Decimal("0")
 
-    for customer in active_customers.order_by("name"):
-        balance = customer._balance
+    for customer in active_customers:
+        balance = customer["_balance"]
         if balance > 0:
             total_due += balance
-            if customer.last_txn_date is None:
+            last_txn_date = customer["last_txn_date"]
+            if last_txn_date is None:
                 last_txn_text = "No entries"
-            elif customer.last_txn_date == today:
+            elif last_txn_date == today:
                 last_txn_text = "Today"
-            elif customer.last_txn_date == today - timedelta(days=1):
+            elif last_txn_date == today - timedelta(days=1):
                 last_txn_text = "Yesterday"
             else:
-                last_txn_text = customer.last_txn_date.strftime("%d %b")
+                last_txn_text = last_txn_date.strftime("%d %b")
 
             customers_with_due.append(
                 {
-                    "id": str(customer.id),
-                    "name": customer.name,
-                    "phone": customer.phone,
+                    "id": str(customer["id"]),
+                    "name": customer["name"],
+                    "phone": customer["phone"],
                     "balance": f"{balance:.2f}",
                     "last_transaction": last_txn_text,
                 }
@@ -102,45 +112,74 @@ def dashboard_view(request):
 
     customers_with_due.sort(key=lambda c: Decimal(c["balance"]), reverse=True)
 
-    # All transactions for this user
-    all_txns = Transaction.objects.filter(
-        customer__user=user,
-        customer__status=CustomerStatus.ACTIVE,
+    # Query 4: Daily summary for last 7 days in a single grouped query
+    seven_days_ago = today - timedelta(days=6)
+    daily_txns = (
+        Transaction.objects.filter(
+            customer__user=user,
+            customer__status=CustomerStatus.ACTIVE,
+            transaction_date__gte=seven_days_ago,
+            transaction_date__lte=today,
+        )
+        .values("transaction_date")
+        .annotate(
+            given=Coalesce(Sum("amount", filter=Q(type=TransactionType.CREDIT)), zero)
+                  - Coalesce(Sum("amount", filter=Q(type=TransactionType.REVERSAL, reversal_of__type=TransactionType.CREDIT)), zero),
+            received=Coalesce(Sum("amount", filter=Q(type=TransactionType.PAYMENT)), zero)
+                     - Coalesce(Sum("amount", filter=Q(type=TransactionType.REVERSAL, reversal_of__type=TransactionType.PAYMENT)), zero),
+        )
     )
-    total_given = calculate_net_amount(all_txns, TransactionType.CREDIT)
-    total_received = calculate_net_amount(all_txns, TransactionType.PAYMENT)
-    total_transactions = all_txns.exclude(type=TransactionType.REVERSAL).count()
-
-    # Daily summary for the last 7 days
+    daily_map = {row["transaction_date"]: row for row in daily_txns}
     daily_summary = []
     for i in range(6, -1, -1):
         day = today - timedelta(days=i)
-        day_txns = all_txns.filter(transaction_date=day)
-        d_given = calculate_net_amount(day_txns, TransactionType.CREDIT)
-        d_received = calculate_net_amount(day_txns, TransactionType.PAYMENT)
+        d = daily_map.get(day, {"given": Decimal("0"), "received": Decimal("0")})
         daily_summary.append({
             "date": day.strftime("%d %b"),
-            "given": float(d_given),
-            "received": float(d_received),
+            "given": float(d["given"]),
+            "received": float(d["received"]),
         })
+
+    # Query 5: Recent transactions (top 6 for instant dashboard rendering)
+    recent_txns_qs = (
+        Transaction.objects.filter(
+            customer__user=user,
+            customer__status=CustomerStatus.ACTIVE,
+        )
+        .select_related("customer")
+        .order_by("-transaction_date", "-created_at")[:6]
+    )
+    recent_transactions = [
+        {
+            "id": str(txn.id),
+            "customer": str(txn.customer_id),
+            "customer_name": txn.customer.name,
+            "type": txn.type,
+            "amount": f"{txn.amount:.2f}",
+            "description": txn.description,
+            "transaction_date": txn.transaction_date.isoformat(),
+        }
+        for txn in recent_txns_qs
+    ]
 
     return Response(
         {
             "total_due": f"{total_due:.2f}",
-            "today_given": f"{today_given:.2f}",
-            "today_received": f"{today_received:.2f}",
+            "today_given": f"{agg['today_given']:.2f}",
+            "today_received": f"{agg['today_received']:.2f}",
             "total_customers": total_customers,
-            "total_given": f"{total_given:.2f}",
-            "total_received": f"{total_received:.2f}",
-            "total_transactions": total_transactions,
+            "total_given": f"{agg['total_given']:.2f}",
+            "total_received": f"{agg['total_received']:.2f}",
+            "total_transactions": agg["total_transactions"],
             "daily_summary": daily_summary,
-            "this_month_sales": f"{this_month_sales:.2f}",
+            "this_month_sales": f"{agg['month_sales']:.2f}",
             "weekly_breakdown": [
-                {"week": "Week 1", "amount": f"{week1_sales:.2f}"},
-                {"week": "Week 2", "amount": f"{week2_sales:.2f}"},
-                {"week": "Week 3", "amount": f"{week3_sales:.2f}"},
-                {"week": "Week 4", "amount": f"{week4_sales:.2f}"},
+                {"week": "Week 1", "amount": f"{agg['w1_sales']:.2f}"},
+                {"week": "Week 2", "amount": f"{agg['w2_sales']:.2f}"},
+                {"week": "Week 3", "amount": f"{agg['w3_sales']:.2f}"},
+                {"week": "Week 4", "amount": f"{agg['w4_sales']:.2f}"},
             ],
             "customers_with_due": customers_with_due[:20],
+            "recent_transactions": recent_transactions,
         }
     )

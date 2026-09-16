@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../features/auth/AuthContext';
-import { authService } from '../services/auth.service';
 import { ledgerService } from '../services/ledger.service';
 import { formatCurrency, getGreeting } from '../utils/format';
 import { LoadingState, ErrorState } from '../components/ui/LedgerComponents';
 import { QuickTransactionModal } from '../components/ui/QuickTransactionModal';
+import type { Transaction } from '../types';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -22,12 +22,7 @@ export function DashboardPage() {
 
   const { data: recentTxns } = useQuery({
     queryKey: ['recent-transactions'],
-    queryFn: ledgerService.getAllTransactions,
-  });
-
-  const { data: business } = useQuery({
-    queryKey: ['business-profile'],
-    queryFn: authService.getBusinessProfile,
+    queryFn: () => ledgerService.getAllTransactions(6),
   });
 
   const greeting = getGreeting();
@@ -40,6 +35,13 @@ export function DashboardPage() {
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.phone.includes(search)
   ) ?? [];
+
+  const txnsList: Transaction[] | null = Array.isArray(recentTxns)
+    ? (recentTxns as Transaction[])
+    : (Array.isArray((recentTxns as any)?.results) ? ((recentTxns as any).results as Transaction[]) : null);
+  const displayTxns: Transaction[] = (txnsList && txnsList.length > 0)
+    ? txnsList
+    : (dashboard?.recent_transactions ?? []);
 
   return (
     <div className="space-y-6">
@@ -82,6 +84,65 @@ export function DashboardPage() {
           </p>
           <p className="text-xs text-emerald-700 font-medium">Payment received today</p>
         </div>
+      </div>
+
+      {/* ── QUICK ACTION SHORTCUTS ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <button
+          onClick={() => navigate('/invoices/new')}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-r from-gold-500/20 to-amber-500/10 border-2 border-gold-500/50 hover:border-gold-500 shadow-sm transition-all text-left group cursor-pointer active:scale-98"
+          id="btn-dashboard-new-bill"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gold-500 text-forest-950 flex items-center justify-center font-bold text-lg shadow group-hover:scale-105 transition-transform flex-shrink-0">
+            🧾
+          </div>
+          <div className="min-w-0">
+            <p className="font-serif font-black text-xs sm:text-sm text-stone-900 leading-tight">+ New Bill</p>
+            <p className="text-[10px] text-amber-900/80 font-semibold truncate">Generate & Print</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate('/invoices')}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-parchment-50 border-2 border-parchment-300 hover:border-forest-600 shadow-sm transition-all text-left group cursor-pointer active:scale-98"
+          id="btn-dashboard-all-bills"
+        >
+          <div className="w-10 h-10 rounded-xl bg-forest-900 text-gold-400 flex items-center justify-center font-bold text-lg shadow group-hover:scale-105 transition-transform flex-shrink-0">
+            📑
+          </div>
+          <div className="min-w-0">
+            <p className="font-serif font-black text-xs sm:text-sm text-stone-900 leading-tight">All Bills</p>
+            <p className="text-[10px] text-stone-500 font-semibold truncate">Invoices History</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate('/customers/new')}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-parchment-50 border-2 border-parchment-300 hover:border-forest-600 shadow-sm transition-all text-left group cursor-pointer active:scale-98"
+          id="btn-dashboard-new-customer"
+        >
+          <div className="w-10 h-10 rounded-xl bg-stone-800 text-parchment-100 flex items-center justify-center font-bold text-lg shadow group-hover:scale-105 transition-transform flex-shrink-0">
+            👤
+          </div>
+          <div className="min-w-0">
+            <p className="font-serif font-black text-xs sm:text-sm text-stone-900 leading-tight">+ Customer</p>
+            <p className="text-[10px] text-stone-500 font-semibold truncate">Add to Khata</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => setQuickTxnModal({ open: true, type: 'credit' })}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-parchment-50 border-2 border-parchment-300 hover:border-rose-600 shadow-sm transition-all text-left group cursor-pointer active:scale-98"
+          id="btn-dashboard-quick-entry"
+        >
+          <div className="w-10 h-10 rounded-xl bg-rose-800 text-white flex items-center justify-center font-bold text-lg shadow group-hover:scale-105 transition-transform flex-shrink-0">
+            ✍️
+          </div>
+          <div className="min-w-0">
+            <p className="font-serif font-black text-xs sm:text-sm text-stone-900 leading-tight">+ Quick Entry</p>
+            <p className="text-[10px] text-stone-500 font-semibold truncate">Given / Received</p>
+          </div>
+        </button>
       </div>
 
       {/* ── SEARCH INPUT FIELD ────────────────────────────────────────────── */}
@@ -163,8 +224,8 @@ export function DashboardPage() {
           </div>
 
           <div className="bg-parchment-50 rounded-2xl border-2 border-parchment-300 p-3 shadow-md space-y-2">
-            {recentTxns && recentTxns.length > 0 ? (
-              recentTxns.slice(0, 6).map((txn) => {
+            {displayTxns && displayTxns.length > 0 ? (
+              displayTxns.slice(0, 6).map((txn) => {
                 const isPayment = txn.type === 'payment';
                 return (
                   <div

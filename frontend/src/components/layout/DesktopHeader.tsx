@@ -20,6 +20,8 @@ export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
     if (path.startsWith('/customers/new')) return 'Add New Customer Record';
     if (path.startsWith('/customers')) return 'Customers Directory & Ledger';
     if (path.startsWith('/activity')) return 'Shop Activity Logbook';
+    if (path.startsWith('/invoices/new')) return 'Create New Bill / Invoice';
+    if (path.startsWith('/invoices')) return 'Bills & Invoices Register';
     if (path.startsWith('/reports')) return 'Business Analytics & Reports';
     if (path.startsWith('/settings')) return 'Account & Ledger Settings';
     return 'HisabPoint Digital Ledger';
@@ -57,6 +59,21 @@ export function DesktopHeader({ onOpenNewEntry }: DesktopHeaderProps) {
           id="btn-theme-toggle-desktop"
         >
           {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+
+        {/* New Bill Button */}
+        <button
+          onClick={() => navigate('/invoices/new')}
+          className="bg-gold-500 hover:bg-gold-400 text-forest-950 text-xs font-black px-3.5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-amber-300"
+          id="btn-header-new-bill"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="11" x2="12" y2="17" />
+            <line x1="9" y1="14" x2="15" y2="14" />
+          </svg>
+          + New Bill
         </button>
 
         {/* 3D Tactile Action Button */}

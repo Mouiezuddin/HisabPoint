@@ -38,6 +38,7 @@ LOCAL_APPS = [
     "customers",
     "ledger",
     "reports",
+    "billing",
     "common",
 ]
 
