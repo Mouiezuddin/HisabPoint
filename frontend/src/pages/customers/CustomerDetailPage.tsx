@@ -11,7 +11,9 @@ import { showToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/format';
 import { QuickTransactionModal } from '../../components/ui/QuickTransactionModal';
 import { WhatsAppReminderModal } from '../../components/ui/WhatsAppReminderModal';
+import { SendTransactionBillModal } from '../../components/ui/SendTransactionBillModal';
 import { UpiQrModal } from '../../components/ui/UpiQrModal';
+import { authService } from '../../services/auth.service';
 
 export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +26,13 @@ export function CustomerDetailPage() {
   const [showArchive, setShowArchive] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showBillModal, setShowBillModal] = useState(false);
   const [showUpiModal, setShowUpiModal] = useState(false);
+
+  const { data: business } = useQuery({
+    queryKey: ['business-profile'],
+    queryFn: authService.getBusinessProfile,
+  });
 
   const {
     data: customer,
@@ -148,10 +156,12 @@ export function CustomerDetailPage() {
           {/* Secondary Utilities */}
           <div className="flex flex-wrap items-center gap-2 order-2 sm:order-1">
             <button
-              onClick={() => setShowWhatsAppModal(true)}
-              className="flex-1 sm:flex-none bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95"
+              onClick={() => setShowBillModal(true)}
+              className="flex-1 sm:flex-none bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
+              id="btn-send-history-bill"
+              title="Send Transaction History as Bill via WhatsApp or Print PDF"
             >
-              <span>💬 WhatsApp</span>
+              <span>🧾 Send Bill (WhatsApp)</span>
             </button>
             <button
               onClick={() => setShowUpiModal(true)}
@@ -206,8 +216,18 @@ export function CustomerDetailPage() {
 
       {/* Transaction History Section */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-black font-serif text-stone-900">Transaction History</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-lg font-black font-serif text-stone-900">Transaction History</h2>
+            <button
+              onClick={() => setShowBillModal(true)}
+              className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-2.5 py-1 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
+              title="Share or Print this transaction history as a Bill"
+              id="btn-share-history-bill"
+            >
+              <span>🧾 Share Bill</span>
+            </button>
+          </div>
 
           {/* Type Filter Pills */}
           <div className="flex gap-1 bg-parchment-200 p-1 rounded-xl border border-parchment-300">
@@ -340,6 +360,18 @@ export function CustomerDetailPage() {
         dueAmount={customer.balance}
         shopName={user?.name || 'HisabPoint Ledger'}
       />
+
+      {/* Send Transaction History as Bill Modal */}
+      {customer && (
+        <SendTransactionBillModal
+          isOpen={showBillModal}
+          onClose={() => setShowBillModal(false)}
+          customer={customer}
+          transactions={transactions || []}
+          shopName={user?.name || 'HisabPoint Ledger'}
+          business={business}
+        />
+      )}
 
       {/* Dynamic UPI QR Code Modal */}
       <UpiQrModal
