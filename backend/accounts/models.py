@@ -47,3 +47,17 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.name} <{self.email}>"
+
+
+class LoginAttempt(models.Model):
+    """Tracks consecutive failed login attempts and temporary lockouts per email or IP."""
+    identifier = models.CharField(max_length=255, unique=True, db_index=True)
+    failed_count = models.PositiveIntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "login_attempts"
+
+    def __str__(self):
+        return f"{self.identifier} ({self.failed_count} failed, locked_until={self.locked_until})"

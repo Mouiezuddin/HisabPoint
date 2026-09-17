@@ -78,6 +78,60 @@ class UserLoginTestCase(APITestCase):
             self.login_url, {"email": self.user.email, "password": "WrongPassword!"}
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        data = response.json()
+        self.assertEqual(data.get("remaining_attempts"), 4)
+        self.assertFalse(data.get("locked"))
+
+    def test_login_lockout_after_five_failed_attempts(self):
+        client = cast(APIClient, self.client)
+
+        # First 4 failed attempts should return 401 with decreasing remaining_attempts
+        for i in range(1, 5):
+            res: Any = client.post(
+                self.login_url, {"email": self.user.email, "password": "WrongPassword!"}
+            )
+            self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+            data = res.json()
+            self.assertEqual(data.get("remaining_attempts"), 5 - i)
+            self.assertFalse(data.get("locked"))
+
+        # 5th failed attempt should trigger 429 Too Many Requests with locked=True and 30-min retry_after
+        res5: Any = client.post(
+            self.login_url, {"email": self.user.email, "password": "WrongPassword!"}
+        )
+        self.assertEqual(res5.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        data5 = res5.json()
+        self.assertTrue(data5.get("locked"))
+        self.assertEqual(data5.get("remaining_attempts"), 0)
+        self.assertEqual(data5.get("retry_after"), 1800)
+        self.assertIn("Retry-After", res5.headers)
+
+        # 6th attempt while locked should also return 429
+        res6: Any = client.post(
+            self.login_url, {"email": self.user.email, "password": self.password}
+        )
+        self.assertEqual(res6.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertTrue(res6.json().get("locked"))
+
+    def test_successful_login_resets_failed_attempts(self):
+        client = cast(APIClient, self.client)
+
+        # 3 failed attempts
+        for _ in range(3):
+            client.post(self.login_url, {"email": self.user.email, "password": "WrongPassword!"})
+
+        # Correct password on 4th attempt succeeds
+        res: Any = client.post(
+            self.login_url, {"email": self.user.email, "password": self.password}
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Next failed attempt should reset counter back to 4 remaining attempts
+        res_after: Any = client.post(
+            self.login_url, {"email": self.user.email, "password": "WrongPassword!"}
+        )
+        self.assertEqual(res_after.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(res_after.json().get("remaining_attempts"), 4)
 
     def test_profile_authenticated(self):
         client = cast(APIClient, self.client)

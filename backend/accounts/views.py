@@ -16,7 +16,10 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from .models import User
+from datetime import timedelta
+from django.utils import timezone
+
+from .models import User, LoginAttempt
 from .serializers import (
     RegisterSerializer,
     UserProfileSerializer,
@@ -30,6 +33,17 @@ from .totp import (
     generate_recovery_codes,
 )
 from businesses.services import get_or_create_business_profile
+
+MAX_FAILED_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION_SECONDS = 30 * 60  # 30 minutes = 1800 seconds
+
+
+def get_client_ip(request) -> str:
+    """Extract client IP address considering proxy headers."""
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "") or "unknown"
 
 
 # ── Rate Throttling Classes ───────────────────────────────────────────────
@@ -130,20 +144,81 @@ class RegisterView(generics.CreateAPIView):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    """POST /api/auth/login/ — returns access + refresh tokens and sets HttpOnly cookies."""
+    """POST /api/auth/login/ — returns access + refresh tokens and sets HttpOnly cookies.
+    Enforces rate-limiting: 5 consecutive failed attempts lock the account/IP for 30 minutes.
+    """
 
     serializer_class = CustomTokenObtainPairSerializer
-    throttle_classes = [LoginRateThrottle]
+    throttle_classes: list[Any] = []
 
     def post(self, request, *args, **kwargs):
+        raw_email = request.data.get("email", "")
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else ""
+        ip = get_client_ip(request)
+        identifier = f"email:{email}" if email else f"ip:{ip}"
+
+        now = timezone.now()
+        attempt = LoginAttempt.objects.filter(identifier=identifier).first()
+
+        # Check if currently locked
+        if attempt and attempt.locked_until:
+            if attempt.locked_until > now:
+                remaining_seconds = int((attempt.locked_until - now).total_seconds())
+                remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+                return Response(
+                    {
+                        "message": f"Account temporarily locked due to 5 failed login attempts. Please try again in {remaining_minutes} minute{'s' if remaining_minutes != 1 else ''}.",
+                        "locked": True,
+                        "retry_after": remaining_seconds,
+                        "remaining_attempts": 0,
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                    headers={"Retry-After": str(remaining_seconds)},
+                )
+            else:
+                # Lockout period has elapsed, reset counter
+                attempt.failed_count = 0
+                attempt.locked_until = None
+                attempt.save(update_fields=["failed_count", "locked_until", "updated_at"])
+
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
         except Exception:
-            return Response(
-                {"message": "Invalid email or password."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+            # Increment failed attempt count
+            if not attempt:
+                attempt = LoginAttempt(identifier=identifier, failed_count=0)
+            attempt.failed_count += 1
+
+            if attempt.failed_count >= MAX_FAILED_LOGIN_ATTEMPTS:
+                attempt.locked_until = now + timedelta(seconds=LOCKOUT_DURATION_SECONDS)
+                attempt.save()
+                return Response(
+                    {
+                        "message": "Too many failed login attempts. Your account has been locked for 30 minutes.",
+                        "locked": True,
+                        "retry_after": LOCKOUT_DURATION_SECONDS,
+                        "remaining_attempts": 0,
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                    headers={"Retry-After": str(LOCKOUT_DURATION_SECONDS)},
+                )
+            else:
+                attempt.save()
+                remaining_attempts = MAX_FAILED_LOGIN_ATTEMPTS - attempt.failed_count
+                return Response(
+                    {
+                        "message": f"Invalid email or password. {remaining_attempts} attempt{'s' if remaining_attempts != 1 else ''} remaining before a 30-minute lockout.",
+                        "locked": False,
+                        "retry_after": 0,
+                        "remaining_attempts": remaining_attempts,
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        # Successful login: clear failed attempts
+        if attempt:
+            attempt.delete()
 
         user = serializer.user
 

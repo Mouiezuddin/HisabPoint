@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../features/auth/AuthContext';
 import { getErrorMessage } from '../../utils/format';
+
+function formatCountdown(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
 
 export function LoginPage() {
   const { login, verify2FA, loginWithGoogle } = useAuth();
@@ -14,19 +20,86 @@ export function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Rate Limiting & Lockout State
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+
   // 2FA Challenge State
   const [twoFaPending, setTwoFaPending] = useState(false);
   const [preAuthToken, setPreAuthToken] = useState('');
   const [twoFaCode, setTwoFaCode] = useState('');
   const [twoFaLoading, setTwoFaLoading] = useState(false);
 
+  // Initialize lockout and failed attempts from localStorage on mount
+  useEffect(() => {
+    const storedUntil = localStorage.getItem('hisab_login_lockout_until');
+    if (storedUntil) {
+      const lockoutUntil = parseInt(storedUntil, 10);
+      const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      if (remaining > 0) {
+        setLockoutSeconds(remaining);
+        setRemainingAttempts(0);
+        return;
+      } else {
+        localStorage.removeItem('hisab_login_lockout_until');
+        localStorage.removeItem('hisab_failed_login_attempts');
+      }
+    }
+
+    const storedAttempts = parseInt(localStorage.getItem('hisab_failed_login_attempts') || '0', 10);
+    if (!isNaN(storedAttempts) && storedAttempts > 0 && storedAttempts < 5) {
+      setRemainingAttempts(5 - storedAttempts);
+    }
+  }, []);
+
+  // Countdown timer tick
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+
+    const timer = setInterval(() => {
+      const storedUntil = localStorage.getItem('hisab_login_lockout_until');
+      if (storedUntil) {
+        const lockoutUntil = parseInt(storedUntil, 10);
+        const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+        if (remaining <= 0) {
+          localStorage.removeItem('hisab_login_lockout_until');
+          localStorage.removeItem('hisab_failed_login_attempts');
+          setLockoutSeconds(0);
+          setRemainingAttempts(null);
+          setError('');
+        } else {
+          setLockoutSeconds(remaining);
+        }
+      } else {
+        setLockoutSeconds((prev) => {
+          if (prev <= 1) {
+            localStorage.removeItem('hisab_login_lockout_until');
+            localStorage.removeItem('hisab_failed_login_attempts');
+            setRemainingAttempts(null);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (lockoutSeconds > 0) return;
     if (!email.trim() || !password) return;
     setLoading(true);
     setError('');
     try {
       const res = await login(email.trim(), password);
+      // Clean up lockout state on successful login
+      localStorage.removeItem('hisab_login_lockout_until');
+      localStorage.removeItem('hisab_failed_login_attempts');
+      setLockoutSeconds(0);
+      setRemainingAttempts(null);
+
       if (res && res['2fa_required'] && res.pre_auth_token) {
         setTwoFaPending(true);
         setPreAuthToken(res.pre_auth_token);
@@ -34,8 +107,48 @@ export function LoginPage() {
       } else {
         navigate('/', { replace: true });
       }
-    } catch (err) {
-      setError(getErrorMessage(err));
+    } catch (err: unknown) {
+      const errorObj = err as {
+        response?: {
+          status?: number;
+          data?: {
+            locked?: boolean;
+            retry_after?: number;
+            remaining_attempts?: number;
+            message?: string;
+            detail?: string;
+          };
+        };
+      };
+      const respStatus = errorObj?.response?.status;
+      const respData = errorObj?.response?.data;
+
+      // Track failed attempts in localStorage
+      const currentFailed = (parseInt(localStorage.getItem('hisab_failed_login_attempts') || '0', 10) || 0) + 1;
+
+      // Lock if server returns 429/locked OR client reaches 5 failed attempts
+      const isLockedNow = respStatus === 429 || Boolean(respData?.locked) || currentFailed >= 5;
+
+      if (isLockedNow) {
+        const retryAfter = typeof respData?.retry_after === 'number' ? respData.retry_after : 1800;
+        const lockoutUntil = Date.now() + retryAfter * 1000;
+        localStorage.setItem('hisab_login_lockout_until', lockoutUntil.toString());
+        localStorage.setItem('hisab_failed_login_attempts', '5');
+        setLockoutSeconds(retryAfter);
+        setRemainingAttempts(0);
+        setError(
+          respData?.message ||
+          respData?.detail ||
+          'Too many failed login attempts (5/5). Your account is locked for 30 minutes.'
+        );
+      } else {
+        localStorage.setItem('hisab_failed_login_attempts', currentFailed.toString());
+        const remaining = typeof respData?.remaining_attempts === 'number'
+          ? respData.remaining_attempts
+          : Math.max(1, 5 - currentFailed);
+        setRemainingAttempts(remaining);
+        setError(getErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -64,6 +177,7 @@ export function LoginPage() {
   }
 
   async function handleGoogleSuccess(credentialResponse: { credential?: string }) {
+    if (lockoutSeconds > 0) return;
     if (!credentialResponse.credential) {
       setError('Google authentication did not provide a valid credential token.');
       return;
@@ -72,6 +186,9 @@ export function LoginPage() {
     setError('');
     try {
       await loginWithGoogle(credentialResponse.credential);
+      localStorage.removeItem('hisab_login_lockout_until');
+      setLockoutSeconds(0);
+      setRemainingAttempts(null);
       navigate('/', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));
@@ -85,9 +202,12 @@ export function LoginPage() {
   }
 
   function handleDemoFill() {
+    if (lockoutSeconds > 0) return;
     setEmail('demo@hisabpoint.com');
     setPassword('demo1234');
   }
+
+  const isLocked = lockoutSeconds > 0;
 
   return (
     <div className="min-h-dvh bg-wood-desk text-amber-100 flex items-center justify-center p-4 selection:bg-gold-500 selection:text-forest-950 font-sans">
@@ -134,8 +254,11 @@ export function LoginPage() {
                   <button
                     type="button"
                     onClick={handleDemoFill}
-                    className="text-[11px] font-bold text-[#194a32] bg-[#ece5d5] hover:bg-[#e2d8c3] px-2.5 py-1 rounded-lg border border-[#cfc4a6] transition-all"
-                    title="Auto-fill demo credentials"
+                    disabled={isLocked}
+                    className={`text-[11px] font-bold text-[#194a32] bg-[#ece5d5] hover:bg-[#e2d8c3] px-2.5 py-1 rounded-lg border border-[#cfc4a6] transition-all ${
+                      isLocked ? 'opacity-40 cursor-not-allowed' : ''
+                    }`}
+                    title={isLocked ? 'Locked' : 'Auto-fill demo credentials'}
                   >
                     ⚡ Fill Demo
                   </button>
@@ -153,10 +276,46 @@ export function LoginPage() {
                 </p>
               </div>
 
-              {error && (
-                <div className="bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded-xl px-4 py-3 shadow-sm" role="alert">
-                  {error}
+              {/* 30-Minute Lockout Alert with Live Countdown */}
+              {isLocked ? (
+                <div className="bg-gradient-to-br from-[#fef3c7] via-[#fde68a] to-[#fcd34d] border-2 border-[#d97706] rounded-2xl p-4 shadow-md space-y-3 text-[#78350f]">
+                  <div className="flex items-center gap-2 font-black text-xs sm:text-sm text-[#92400e]">
+                    <span className="text-xl">⏳</span>
+                    <span>Account Locked (5 Failed Attempts)</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-[#78350f] font-medium">
+                    Too many consecutive incorrect passwords. Sign-in has been locked for 30 minutes to protect your ledger data.
+                  </p>
+                  <div className="bg-[#fffbeb] border border-[#f59e0b] rounded-xl p-3 flex items-center justify-between shadow-inner">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#b45309]">
+                      Unlocks In:
+                    </span>
+                    <span className="font-mono text-2xl font-black text-[#b45309] tracking-widest bg-white/90 px-3 py-0.5 rounded-lg border border-[#fde68a] shadow-sm">
+                      {formatCountdown(lockoutSeconds)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#92400e]/80 text-center font-semibold italic">
+                    The login form will automatically re-enable once the timer expires.
+                  </p>
                 </div>
+              ) : (
+                <>
+                  {/* Remaining attempts warning banner */}
+                  {remainingAttempts !== null && remainingAttempts > 0 && remainingAttempts < 5 && (
+                    <div className="bg-amber-50 border border-amber-400 text-amber-900 rounded-xl px-3.5 py-2.5 text-xs font-semibold flex items-center gap-2 shadow-sm animate-pulse">
+                      <span className="text-base">⚠️</span>
+                      <span>
+                        <strong>Security Notice:</strong> {remainingAttempts} {remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining before a 30-minute lockout.
+                      </span>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold rounded-xl px-4 py-3 shadow-sm" role="alert">
+                      {error}
+                    </div>
+                  )}
+                </>
               )}
 
               {twoFaPending ? (
@@ -228,7 +387,10 @@ export function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="9876543210 or email@domain.com"
-                        className="input text-xs pl-10 bg-[#fffdf7]"
+                        disabled={isLocked}
+                        className={`input text-xs pl-10 bg-[#fffdf7] ${
+                          isLocked ? 'opacity-60 cursor-not-allowed bg-stone-100' : ''
+                        }`}
                         required
                       />
                     </div>
@@ -253,13 +415,17 @@ export function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="input text-xs pl-10 pr-10 bg-[#fffdf7]"
+                        disabled={isLocked}
+                        className={`input text-xs pl-10 pr-10 bg-[#fffdf7] ${
+                          isLocked ? 'opacity-60 cursor-not-allowed bg-stone-100' : ''
+                        }`}
                         required
                       />
                       <button
                         type="button"
+                        disabled={isLocked}
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 text-xs font-bold hover:text-stone-800"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 text-xs font-bold hover:text-stone-800 disabled:opacity-40"
                       >
                         {showPassword ? '🙈' : '👁️'}
                       </button>
@@ -268,11 +434,15 @@ export function LoginPage() {
 
                   <button
                     type="submit"
-                    disabled={loading || googleLoading}
-                    className="w-full btn-forest text-white font-bold py-3.5 text-xs rounded-xl shadow-md flex items-center justify-center gap-2 mt-2"
+                    disabled={isLocked || loading || googleLoading}
+                    className={`w-full btn-forest text-white font-bold py-3.5 text-xs rounded-xl shadow-md flex items-center justify-center gap-2 mt-2 ${
+                      isLocked ? 'opacity-50 cursor-not-allowed bg-stone-600 hover:bg-stone-600' : ''
+                    }`}
                     id="login-submit"
                   >
-                    {loading ? (
+                    {isLocked ? (
+                      <span>🔒 Locked ({formatCountdown(lockoutSeconds)})</span>
+                    ) : loading ? (
                       <span>Signing In…</span>
                     ) : (
                       <>
@@ -291,7 +461,7 @@ export function LoginPage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-center w-full min-h-[40px] items-center">
+                  <div className={`flex justify-center w-full min-h-[40px] items-center ${isLocked ? 'opacity-40 pointer-events-none' : ''}`}>
                     {googleLoading ? (
                       <div className="text-xs font-bold text-[#194a32] animate-pulse">
                         Signing in with Google...
