@@ -10,25 +10,32 @@
   <br />
 
   [![Live App](https://img.shields.io/badge/🚀_LAUNCH_LIVE_APP-hisab--point.vercel.app-10B981?style=for-the-badge&logo=vercel&logoColor=white)](https://hisab-point.vercel.app)
+  [![System Design Case Study](https://img.shields.io/badge/🏛️_SYSTEM_DESIGN-CASE_STUDY-4F46E5?style=for-the-badge&logo=googledocs&logoColor=white)](docs/SYSTEM_DESIGN_CASE_STUDY.md)
 
-  <br />
+  <br /><br />
 
-  [![React](https://img.shields.io/badge/React_18.3-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript_5.5-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+  [![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript_5.8-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
   [![Django](https://img.shields.io/badge/Django_5.0-092E20?style=flat-square&logo=django&logoColor=white)](https://www.djangoproject.com/)
   [![Django REST Framework](https://img.shields.io/badge/DRF_3.15-A30000?style=flat-square&logo=django&logoColor=white)](https://www.django-rest-framework.org/)
+  [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+  [![Neon PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Serverless-00E599?style=flat-square&logo=postgresql&logoColor=white)](https://neon.tech/)
+  [![Vitest](https://img.shields.io/badge/Vitest-Tested-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
   [![TailwindCSS](https://img.shields.io/badge/Tailwind_3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
   [![PWA](https://img.shields.io/badge/PWA-Installable-5A0FC8?style=flat-square&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-  [![Neon PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Serverless-00E599?style=flat-square&logo=postgresql&logoColor=white)](https://neon.tech/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=flat-square)](https://opensource.org/licenses/MIT)
 
   <br />
 
   ```text
-  ⚡ LATENCY: ~220ms (Edge)  |  🛡️ ARCHITECTURE: Zero-Data-Leakage  |  📱 SYSTEM: Cross-Platform PWA
+  ⚡ LOAD TIME: ~0.2s (SWR Cached)  |  🛡️ INTEGRITY: Atomic Double-Entry  |  📱 SYSTEM: Cross-Platform PWA
   ```
 
 </div>
+
+---
+
+> 💡 **Recruiter / Engineering Manager Notice**: For an in-depth architectural breakdown including database ERD, concurrency handling, atomic billing synchronization, and interview talking points, read the **[System Design Case Study](docs/SYSTEM_DESIGN_CASE_STUDY.md)**.
 
 ---
 
@@ -93,7 +100,17 @@ These paper ledgers suffer from:
 
 <br /><br />
 
-### 7. Core Preferences & Standalone PWA Engine
+### 7. Itemized POS Billing & Invoice Engine
+*Generate itemized tax/cash bills with dynamic line items, flat/percentage discounts, GST calculations, and automatic ledger synchronization for credit sales.*
+
+<br /><br />
+
+### 8. WhatsApp Statement & Printable Khata Bill (PDF)
+*Send formatted ledger statements directly to customer WhatsApp chats with range filters (Last 5, Last 10, This Month) or print official A4/Thermal bills with shop branding and amount in Indian words.*
+
+<br /><br />
+
+### 9. Core Preferences & Standalone PWA Engine
 *1-tap PWA installation trigger, business entity parameters, and instant toggle between Sunlight Day and Royal Night modes.*
 
 <img src="docs/screenshots/settings.png" alt="HisabPoint Settings" width="100%" style="border-radius: 14px; border: 1px solid #d6cbaf;" />
@@ -303,6 +320,11 @@ npm run dev
 | `POST` | `/api/ledger/transactions/` | Record Credit (`GIVEN`) or Payment (`RECEIVED`) | ✅ Yes |
 | `GET` | `/api/reports/dashboard/` | Real-time aggregate metric counters | ✅ Yes |
 | `GET` | `/api/reports/analytics/` | 7-day trend analysis & transaction distributions | ✅ Yes |
+| `GET` | `/api/invoices/` | Query invoices with status/date filtering and search | ✅ Yes |
+| `POST` | `/api/invoices/` | Create itemized invoice with atomic ledger sync | ✅ Yes |
+| `GET` | `/api/invoices/<id>/` | Fetch invoice detail with line items & financial totals | ✅ Yes |
+| `POST` | `/api/invoices/<id>/cancel/` | Cancel invoice and atomically reverse ledger entry | ✅ Yes |
+| `GET` | `/api/invoices/next-number/` | Get next sequential invoice reference (e.g. `INV-0042`) | ✅ Yes |
 
 ---
 
