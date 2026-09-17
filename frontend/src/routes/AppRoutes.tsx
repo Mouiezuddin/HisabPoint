@@ -11,8 +11,9 @@ const LoginPage = lazy(() => import('../pages/auth/LoginPage').then(m => ({ defa
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 
+import { DashboardPage } from '../pages/DashboardPage'
+
 // Lazy-loaded Protected App pages (downloaded on-demand when user logs in)
-const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const CustomerListPage = lazy(() => import('../pages/customers/CustomerListPage').then(m => ({ default: m.CustomerListPage })))
 const AddCustomerPage = lazy(() => import('../pages/customers/AddCustomerPage').then(m => ({ default: m.AddCustomerPage })))
 const CustomerDetailPage = lazy(() => import('../pages/customers/CustomerDetailPage').then(m => ({ default: m.CustomerDetailPage })))
@@ -29,21 +30,21 @@ const InvoiceDetailPage = lazy(() => import('../pages/billing/InvoiceDetailPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isLoading } = useAuth()
-  if (isLoading) return <LoadingState message="Opening Bahi Khata…" />
+  if (isLoading && !isLoggedIn) return <LoadingState message="Opening Bahi Khata…" />
   if (!isLoggedIn) return <Navigate to="/" replace />
   return <>{children}</>
 }
 
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isLoading } = useAuth()
-  if (isLoading) return <LoadingState message="Opening Bahi Khata…" />
+  if (isLoading && !isLoggedIn) return <LoadingState message="Opening Bahi Khata…" />
   if (isLoggedIn) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
 function RootRoute() {
   const { isLoggedIn, isLoading } = useAuth()
-  if (isLoading) return <LoadingState message="Opening Bahi Khata…" />
+  if (isLoading && !isLoggedIn) return <LoadingState message="Opening Bahi Khata…" />
   if (isLoggedIn) {
     return (
       <AppLayout>
@@ -56,18 +57,22 @@ function RootRoute() {
 
 export function AppRoutes() {
   const { isLoading } = useAuth()
-  const [showSplash, setShowSplash] = useState(() => {
-    try {
-      return !sessionStorage.getItem('hisab_splash_shown')
-    } catch {
-      return false
+  const [showSplash, setShowSplash] = useState(false)
+
+  // Only trigger splash screen if cold-starting server takes longer than 1200ms
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setShowSplash(true)
+      }, 1200)
+    } else {
+      setShowSplash(false)
     }
-  })
+    return () => clearTimeout(timer)
+  }, [isLoading])
 
   const handleFinishSplash = () => {
-    try {
-      sessionStorage.setItem('hisab_splash_shown', '1')
-    } catch {}
     setShowSplash(false)
   }
 

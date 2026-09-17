@@ -28,6 +28,12 @@ export default defineConfig({
             if (id.includes('@tanstack') || id.includes('axios')) {
               return 'vendor-query'
             }
+            if (id.includes('@react-oauth/google')) {
+              return 'vendor-google'
+            }
+            if (id.includes('@sentry')) {
+              return 'vendor-sentry'
+            }
           }
         },
       },

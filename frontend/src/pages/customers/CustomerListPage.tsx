@@ -7,6 +7,8 @@ import { formatCurrency } from '../../utils/format';
 import { useDebounce } from '../../hooks';
 import { QuickTransactionModal } from '../../components/ui/QuickTransactionModal';
 
+import type { CustomerListItem } from '../../types';
+
 type FilterType = 'all' | 'due' | 'paid';
 
 export function CustomerListPage() {
@@ -23,9 +25,29 @@ export function CustomerListPage() {
     debounce(e.target.value);
   }, [debounce]);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery<CustomerListItem[]>({
     queryKey: ['customers', debouncedSearch],
-    queryFn: () => customerService.list(debouncedSearch || undefined),
+    queryFn: async () => {
+      const res = await customerService.list(debouncedSearch || undefined);
+      if (!debouncedSearch) {
+        try {
+          localStorage.setItem('hisab_customers_cache', JSON.stringify(res));
+        } catch {}
+      }
+      return res;
+    },
+    initialData: (): CustomerListItem[] | undefined => {
+      if (!debouncedSearch) {
+        try {
+          const cached = localStorage.getItem('hisab_customers_cache');
+          return cached ? (JSON.parse(cached) as CustomerListItem[]) : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+      return undefined;
+    },
+    staleTime: 1000 * 60 * 5,
   });
 
   const filteredCustomers = data?.filter((c) => {
@@ -102,10 +124,10 @@ export function CustomerListPage() {
       </div>
 
       {/* Content Area */}
-      {isLoading && <LoadingState message="Loading customer directory…" />}
-      {isError && <ErrorState message="Couldn't load customer directory." onRetry={refetch} />}
+      {isLoading && !data && <LoadingState message="Loading customer directory…" />}
+      {isError && !data && <ErrorState message="Couldn't load customer directory." onRetry={refetch} />}
 
-      {!isLoading && !isError && (
+      {(!isLoading || !!data) && (!isError || !!data) && (
         filteredCustomers.length === 0 ? (
           <EmptyState
             title="No customers found"

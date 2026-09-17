@@ -6,7 +6,7 @@ import { ledgerService } from '../services/ledger.service';
 import { formatCurrency, getGreeting } from '../utils/format';
 import { LoadingState, ErrorState } from '../components/ui/LedgerComponents';
 import { QuickTransactionModal } from '../components/ui/QuickTransactionModal';
-import type { Transaction } from '../types';
+import type { Transaction, DashboardData } from '../types';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -14,22 +14,52 @@ export function DashboardPage() {
   const [search, setSearch] = useState('');
   const [quickTxnModal, setQuickTxnModal] = useState<{ open: boolean; customerId?: string; type?: 'credit' | 'payment' }>({ open: false });
 
-  const { data: dashboard, isLoading, isError, refetch } = useQuery({
+  const { data: dashboard, isLoading, isError, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
-    queryFn: ledgerService.getDashboard,
+    queryFn: async () => {
+      const data = await ledgerService.getDashboard();
+      try {
+        localStorage.setItem('hisab_dashboard_cache', JSON.stringify(data));
+      } catch {}
+      return data;
+    },
+    initialData: (): DashboardData | undefined => {
+      try {
+        const cached = localStorage.getItem('hisab_dashboard_cache');
+        return cached ? (JSON.parse(cached) as DashboardData) : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    staleTime: 1000 * 60 * 5,
     refetchInterval: 60_000,
   });
 
-  const { data: recentTxns } = useQuery({
+  const { data: recentTxns } = useQuery<Transaction[] | { results: Transaction[] }>({
     queryKey: ['recent-transactions'],
-    queryFn: () => ledgerService.getAllTransactions(6),
+    queryFn: async () => {
+      const data = await ledgerService.getAllTransactions(6);
+      try {
+        localStorage.setItem('hisab_recent_txns_cache', JSON.stringify(data));
+      } catch {}
+      return data;
+    },
+    initialData: (): Transaction[] | undefined => {
+      try {
+        const cached = localStorage.getItem('hisab_recent_txns_cache');
+        return cached ? (JSON.parse(cached) as Transaction[]) : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    staleTime: 1000 * 60 * 5,
   });
 
   const greeting = getGreeting();
   const ownerName = user?.name ? `${user.name.split(' ')[0]}` : 'Shopkeeper';
 
-  if (isLoading) return <LoadingState message="Opening Bahi Khata…" />;
-  if (isError) return <ErrorState message="Couldn't load Hisab dashboard. Check connection." onRetry={refetch} />;
+  if (isLoading && !dashboard) return <LoadingState message="Opening Bahi Khata…" />;
+  if (isError && !dashboard) return <ErrorState message="Couldn't load Hisab dashboard. Check connection." onRetry={refetch} />;
 
   const filteredCustomers = dashboard?.customers_with_due.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||

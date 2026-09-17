@@ -5,6 +5,7 @@ import { cleanup } from '@testing-library/react'
 // Automatically cleanup after each test
 afterEach(() => {
   cleanup()
+  localStorage.clear()
 })
 
 // Polyfill window.matchMedia for JSDOM
