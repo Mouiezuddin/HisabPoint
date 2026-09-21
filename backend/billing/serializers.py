@@ -38,11 +38,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
     items = InvoiceItemSerializer(many=True, read_only=True)
     balance_due = serializers.SerializerMethodField()
     customer_id = serializers.UUIDField(source="customer.id", read_only=True, allow_null=True)
+    customer_address = serializers.CharField(source="customer.address", read_only=True, default="")
 
     class Meta:
         model = Invoice
         fields = [
-            "id", "customer_id", "customer_name", "customer_phone",
+            "id", "customer_id", "customer_name", "customer_phone", "customer_address",
             "invoice_number", "invoice_date", "due_date",
             "payment_status", "payment_mode",
             "subtotal", "discount_type", "discount_value",

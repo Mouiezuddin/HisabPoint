@@ -334,58 +334,89 @@
   }
 }
 
-/* Print styles for invoices */
+/* Print styles for invoices and statements */
 .print-only {
   display: none;
 }
 
 @media print {
+  /* Reset root, body, and all app layout wrappers so they don't clip, scale, or scroll */
+  html,
+  body,
+  #root,
+  #root > div,
+  .bg-wood-desk,
+  .bg-parchment-100\/90,
+  .app-shell,
+  main {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    border: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   /* Hide all UI chrome during print */
   .no-print,
   .bottom-nav,
   aside,
   header,
   nav,
+  footer,
   .safe-bottom,
   [aria-label="Mobile navigation"],
-  [aria-label="Desktop navigation"] {
+  [aria-label="Desktop navigation"],
+  .network-indicator,
+  .pwa-toast,
+  .install-banner {
     display: none !important;
+  }
+
+  /* Standard A4 paper specifications (210mm x 297mm) */
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
   }
 
   /* Show print-only content */
   .print-only {
     display: block !important;
-  }
-
-  /* Reset backgrounds and layout */
-  body,
-  html {
-    background: white !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .bg-wood-desk,
-  .bg-parchment-100\/90 {
-    background: white !important;
-    box-shadow: none !important;
-  }
-
-  main {
-    padding: 0 !important;
+    width: 100% !important;
     max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Print invoice formatting */
+  /* A4 Bill Sheet Print Optimization */
+  .a4-bill-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 6mm 8mm !important;
+    border: 2px solid #0f172a !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   .print-invoice {
     max-width: 100%;
     margin: 0;
-    padding: 10mm;
-    font-size: 11pt;
-  }
-
-  /* Thermal receipt (80mm / 58mm) */
-  @page {
-    margin: 5mm;
+    padding: 0;
+    font-size: 10.5pt;
   }
 }

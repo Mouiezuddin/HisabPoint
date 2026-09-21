@@ -19,6 +19,7 @@ export interface Invoice {
   customer_id: string | null;
   customer_name: string;
   customer_phone: string;
+  customer_address?: string;
   invoice_number: string;
   invoice_date: string;
   due_date: string | null;
