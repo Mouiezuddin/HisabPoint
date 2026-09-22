@@ -14,6 +14,12 @@ import { WhatsAppReminderModal } from '../../components/ui/WhatsAppReminderModal
 import { SendTransactionBillModal } from '../../components/ui/SendTransactionBillModal';
 import { UpiQrModal } from '../../components/ui/UpiQrModal';
 import { authService } from '../../services/auth.service';
+import {
+  saveCustomerLocal,
+  getCustomerLocal,
+  saveTransactionsLocal,
+  getTransactionsLocal,
+} from '../../features/offline/indexedDb';
 
 export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,7 +47,17 @@ export function CustomerDetailPage() {
     refetch: refetchCustomer,
   } = useQuery({
     queryKey: ['customer', id],
-    queryFn: () => customerService.get(id!),
+    queryFn: async () => {
+      try {
+        const res = await customerService.get(id!);
+        saveCustomerLocal(res);
+        return res;
+      } catch (err) {
+        const local = await getCustomerLocal(id!);
+        if (local) return local;
+        throw err;
+      }
+    },
     enabled: !!id,
   });
 
@@ -51,7 +67,17 @@ export function CustomerDetailPage() {
     isError: txnsError,
   } = useQuery({
     queryKey: ['transactions', id],
-    queryFn: () => ledgerService.getTransactions(id!),
+    queryFn: async () => {
+      try {
+        const res = await ledgerService.getTransactions(id!);
+        saveTransactionsLocal(res);
+        return res;
+      } catch (err) {
+        const local = await getTransactionsLocal(id!);
+        if (local && local.length > 0) return local;
+        throw err;
+      }
+    },
     enabled: !!id,
   });
 
@@ -124,7 +150,14 @@ export function CustomerDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-black font-serif text-stone-900 tracking-tight">{customer.name}</h1>
+              <h1 className="text-3xl font-black font-serif text-stone-900 tracking-tight flex items-center gap-2">
+                <span>{customer.name}</span>
+                {customer.id.startsWith('temp-') && (
+                  <span className="text-xs font-sans font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">
+                    Offline (Pending Sync)
+                  </span>
+                )}
+              </h1>
               <button
                 onClick={() => navigate(`/customers/${id}/edit`)}
                 className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-3 py-1 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
@@ -281,8 +314,13 @@ export function CustomerDetailPage() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-sm text-stone-900 font-serif">
-                            {t.description || (isCredit ? 'Credit Given' : 'Payment Received')}
+                          <p className="font-bold text-sm text-stone-900 font-serif flex items-center gap-1.5">
+                            <span>{t.description || (isCredit ? 'Credit Given' : 'Payment Received')}</span>
+                            {t.id.startsWith('temp-') && (
+                              <span className="text-[9px] font-sans font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                                Offline
+                              </span>
+                            )}
                           </p>
                           <p className="text-[11px] text-stone-500 font-mono mt-0.5">
                             📅 {t.transaction_date}

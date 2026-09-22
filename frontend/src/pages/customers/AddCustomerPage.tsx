@@ -4,6 +4,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerService } from '../../services/customer.service';
 import { showToast } from '../../components/ui/Toast';
 import { getErrorMessage } from '../../utils/format';
+import {
+  saveCustomerLocal,
+  enqueueSyncItem,
+} from '../../features/offline/indexedDb';
+import type { Customer, CustomerListItem } from '../../types';
 
 export function AddCustomerPage() {
   const navigate = useNavigate();
@@ -11,15 +16,80 @@ export function AddCustomerPage() {
   const [form, setForm] = useState({ name: '', phone: '', address: '', notes: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const handleOfflineCustomer = async (data: {
+    name: string;
+    phone?: string;
+    address?: string;
+    notes?: string;
+  }) => {
+    const tempId = `temp-cust-${Date.now()}`;
+    const tempCustomer: Customer = {
+      id: tempId,
+      name: data.name,
+      phone: data.phone || '',
+      address: data.address || '',
+      notes: data.notes || '',
+      status: 'active',
+      balance: '0.00',
+      balance_status: 'settled',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    await saveCustomerLocal(tempCustomer);
+
+    await enqueueSyncItem({
+      type: 'CREATE_CUSTOMER',
+      tempCustomerId: tempId,
+      payload: data,
+    });
+
+    queryClient.setQueryData<CustomerListItem[]>(['customers', undefined], (old) => {
+      const item: CustomerListItem = {
+        id: tempId,
+        name: tempCustomer.name,
+        phone: tempCustomer.phone,
+        status: 'active',
+        balance: '0.00',
+        balance_status: 'settled',
+      };
+      return old ? [item, ...old] : [item];
+    });
+
+    queryClient.setQueryData(['customer', tempId], tempCustomer);
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
+
+    showToast(`${tempCustomer.name} saved offline. Will sync to cloud when connected.`, 'success');
+    navigate(`/customers/${tempId}`, { replace: true });
+  };
+
   const mutation = useMutation({
-    mutationFn: customerService.create,
+    mutationFn: async (data: { name: string; phone?: string; address?: string; notes?: string }) => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('OFFLINE_RECORD');
+      }
+      try {
+        const res = await customerService.create(data);
+        saveCustomerLocal(res);
+        return res;
+      } catch (err: unknown) {
+        if (!navigator.onLine) {
+          throw new Error('OFFLINE_RECORD');
+        }
+        throw err;
+      }
+    },
     onSuccess: (customer) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       showToast(`${customer.name} added successfully.`, 'success');
       navigate(`/customers/${customer.id}`, { replace: true });
     },
-    onError: (err: unknown) => {
+    onError: async (err: unknown, variables) => {
+      if (err instanceof Error && err.message === 'OFFLINE_RECORD') {
+        await handleOfflineCustomer(variables);
+        return;
+      }
       if (err && typeof err === 'object' && 'response' in err) {
         const resp = (err as { response?: { data?: { errors?: Record<string, string[]> } } }).response;
         const apiErrors = resp?.data?.errors;

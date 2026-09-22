@@ -7,6 +7,14 @@ import { ResponsiveModal } from './ResponsiveModal';
 import { AmountInput } from './AmountInput';
 import { showToast } from './Toast';
 import { todayAsInputDate, getErrorMessage } from '../../utils/format';
+import {
+  saveCustomersLocal,
+  getCustomersLocal,
+  saveTransactionLocal,
+  saveCustomerLocal,
+  enqueueSyncItem,
+} from '../../features/offline/indexedDb';
+import type { CustomerListItem, Transaction, BalanceStatus } from '../../types';
 
 interface QuickTransactionModalProps {
   isOpen: boolean;
@@ -32,15 +40,125 @@ export function QuickTransactionModal({
   const [amountError, setAmountError] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
 
-  const { data: customers } = useQuery({
+  const { data: customers } = useQuery<CustomerListItem[]>({
     queryKey: ['customers', customerSearch],
-    queryFn: () => customerService.list(customerSearch || undefined),
+    queryFn: async () => {
+      try {
+        const res = await customerService.list(customerSearch || undefined);
+        saveCustomersLocal(res);
+        return res;
+      } catch (err) {
+        const local = await getCustomersLocal();
+        if (local && local.length > 0) {
+          if (customerSearch) {
+            const q = customerSearch.toLowerCase();
+            return local.filter(
+              (c) => c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q))
+            );
+          }
+          return local;
+        }
+        throw err;
+      }
+    },
     enabled: isOpen,
   });
 
+  const handleOfflineRecord = async (data: {
+    type: 'credit' | 'payment';
+    amount: string;
+    description: string;
+    quantity: string;
+    transaction_date: string;
+  }) => {
+    const customer = customers?.find((c) => c.id === selectedCustomerId);
+    const currentBal = customer ? parseFloat(customer.balance || '0') : 0;
+    const delta = data.type === 'credit' ? parseFloat(data.amount) : -parseFloat(data.amount);
+    const newBal = (currentBal + delta).toFixed(2);
+    const tempId = `temp-txn-${Date.now()}`;
+
+    const tempTxn: Transaction = {
+      id: tempId,
+      customer: selectedCustomerId,
+      customer_name: customer?.name || 'Customer',
+      type: data.type,
+      amount: data.amount,
+      description: data.description,
+      quantity: data.quantity,
+      transaction_date: data.transaction_date,
+      reversal_of_id: null,
+      is_reversed: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    await saveTransactionLocal(tempTxn);
+
+    if (customer) {
+      const updatedCust: CustomerListItem = {
+        ...customer,
+        balance: newBal,
+        balance_status: parseFloat(newBal) > 0 ? ('due' as BalanceStatus) : ('settled' as BalanceStatus),
+      };
+      await saveCustomerLocal(updatedCust);
+    }
+
+    await enqueueSyncItem({
+      type: 'CREATE_TRANSACTION',
+      customerId: selectedCustomerId,
+      payload: data,
+    });
+
+    queryClient.setQueryData<Transaction[]>(['transactions', selectedCustomerId], (old) => {
+      return old ? [tempTxn, ...old] : [tempTxn];
+    });
+
+    queryClient.setQueryData<CustomerListItem[]>(['customers', ''], (old) => {
+      if (!old) return old;
+      return old.map((c) =>
+        c.id === selectedCustomerId
+          ? {
+              ...c,
+              balance: newBal,
+              balance_status: parseFloat(newBal) > 0 ? ('due' as BalanceStatus) : ('settled' as BalanceStatus),
+            }
+          : c
+      );
+    });
+
+    queryClient.invalidateQueries({ queryKey: ['customer', selectedCustomerId] });
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+
+    showToast('Transaction saved offline. Will sync automatically.', 'success');
+    resetForm();
+    onClose();
+  };
+
   const mutation = useMutation({
-    mutationFn: (data: { type: 'credit' | 'payment'; amount: string; description: string; quantity: string; transaction_date: string }) =>
-      ledgerService.createTransaction(selectedCustomerId, data),
+    mutationFn: async (data: {
+      type: 'credit' | 'payment';
+      amount: string;
+      description: string;
+      quantity: string;
+      transaction_date: string;
+    }) => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('OFFLINE_RECORD');
+      }
+      try {
+        const res = await ledgerService.createTransaction(selectedCustomerId, data);
+        if (res?.transaction) {
+          saveTransactionLocal(res.transaction);
+        }
+        return res;
+      } catch (err: unknown) {
+        if (!navigator.onLine) {
+          throw new Error('OFFLINE_RECORD');
+        }
+        throw err;
+      }
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
@@ -51,7 +169,13 @@ export function QuickTransactionModal({
       resetForm();
       onClose();
     },
-    onError: (err) => showToast(getErrorMessage(err), 'error'),
+    onError: async (err: unknown, variables) => {
+      if (err instanceof Error && err.message === 'OFFLINE_RECORD') {
+        await handleOfflineRecord(variables);
+        return;
+      }
+      showToast(getErrorMessage(err), 'error');
+    },
   });
 
   function resetForm() {
@@ -105,7 +229,7 @@ export function QuickTransactionModal({
               <option value="">-- Choose Customer --</option>
               {customers?.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {c.name} {c.id.startsWith('temp-') ? '(Offline)' : ''}
                 </option>
               ))}
             </select>

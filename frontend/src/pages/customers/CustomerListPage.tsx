@@ -8,6 +8,7 @@ import { useDebounce } from '../../hooks';
 import { QuickTransactionModal } from '../../components/ui/QuickTransactionModal';
 
 import type { CustomerListItem } from '../../types';
+import { saveCustomersLocal, getCustomersLocal } from '../../features/offline/indexedDb';
 
 type FilterType = 'all' | 'due' | 'paid';
 
@@ -28,13 +29,28 @@ export function CustomerListPage() {
   const { data, isLoading, isError, refetch } = useQuery<CustomerListItem[]>({
     queryKey: ['customers', debouncedSearch],
     queryFn: async () => {
-      const res = await customerService.list(debouncedSearch || undefined);
-      if (!debouncedSearch) {
-        try {
-          localStorage.setItem('hisab_customers_cache', JSON.stringify(res));
-        } catch {}
+      try {
+        const res = await customerService.list(debouncedSearch || undefined);
+        if (!debouncedSearch) {
+          saveCustomersLocal(res);
+          try {
+            localStorage.setItem('hisab_customers_cache', JSON.stringify(res));
+          } catch {}
+        }
+        return res;
+      } catch (err) {
+        const local = await getCustomersLocal();
+        if (local && local.length > 0) {
+          if (debouncedSearch) {
+            const q = debouncedSearch.toLowerCase();
+            return local.filter(
+              (c) => c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q))
+            );
+          }
+          return local;
+        }
+        throw err;
       }
-      return res;
     },
     initialData: (): CustomerListItem[] | undefined => {
       if (!debouncedSearch) {
@@ -162,8 +178,13 @@ export function CustomerListPage() {
                           {c.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-bold text-stone-900 text-sm sm:text-base font-serif truncate">
-                            {c.name}
+                          <h3 className="font-bold text-stone-900 text-sm sm:text-base font-serif truncate flex items-center gap-1.5">
+                            <span>{c.name}</span>
+                            {c.id.startsWith('temp-') && (
+                              <span className="text-[9px] font-sans font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                                Offline
+                              </span>
+                            )}
                           </h3>
                           <p className="text-xs text-stone-600 font-mono">
                             {c.phone ? `📞 ${c.phone}` : 'No phone'}
@@ -232,7 +253,14 @@ export function CustomerListPage() {
                             <div className="w-8 h-8 rounded-full bg-forest-900 text-gold-300 font-serif font-black text-xs flex items-center justify-center border border-gold-500/40">
                               {c.name.charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-bold text-stone-900 text-sm font-serif">{c.name}</span>
+                            <span className="font-bold text-stone-900 text-sm font-serif flex items-center gap-1.5">
+                              <span>{c.name}</span>
+                              {c.id.startsWith('temp-') && (
+                                <span className="text-[9px] font-sans font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                                  Offline
+                                </span>
+                              )}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-stone-600 font-mono">{c.phone || '—'}</td>

@@ -17,11 +17,19 @@ export function DashboardPage() {
   const { data: dashboard, isLoading, isError, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
     queryFn: async () => {
-      const data = await ledgerService.getDashboard();
       try {
-        localStorage.setItem('hisab_dashboard_cache', JSON.stringify(data));
-      } catch {}
-      return data;
+        const data = await ledgerService.getDashboard();
+        try {
+          localStorage.setItem('hisab_dashboard_cache', JSON.stringify(data));
+        } catch {}
+        return data;
+      } catch (err) {
+        try {
+          const cached = localStorage.getItem('hisab_dashboard_cache');
+          if (cached) return JSON.parse(cached) as DashboardData;
+        } catch {}
+        throw err;
+      }
     },
     initialData: (): DashboardData | undefined => {
       try {
@@ -38,11 +46,19 @@ export function DashboardPage() {
   const { data: recentTxns } = useQuery<Transaction[] | { results: Transaction[] }>({
     queryKey: ['recent-transactions'],
     queryFn: async () => {
-      const data = await ledgerService.getAllTransactions(6);
       try {
-        localStorage.setItem('hisab_recent_txns_cache', JSON.stringify(data));
-      } catch {}
-      return data;
+        const data = await ledgerService.getAllTransactions(6);
+        try {
+          localStorage.setItem('hisab_recent_txns_cache', JSON.stringify(data));
+        } catch {}
+        return data;
+      } catch (err) {
+        try {
+          const cached = localStorage.getItem('hisab_recent_txns_cache');
+          if (cached) return JSON.parse(cached) as Transaction[];
+        } catch {}
+        throw err;
+      }
     },
     initialData: (): Transaction[] | undefined => {
       try {
