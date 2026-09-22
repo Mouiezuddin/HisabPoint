@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.hisabpoint.app",
+      "sha256_cert_fingerprints": [
+        "E4:53:E1:B7:D0:0D:13:57:FE:F2:83:D9:3A:4E:9E:F2:99:2D:AC:5F:09:EF:E3:FB:14:12:DE:F1:AD:CE:BC:2F"
+      ]
+    }
+  }
+]
