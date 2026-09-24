@@ -342,7 +342,18 @@
 @media print {
   /* Reset root, body, and all app layout wrappers so they don't clip, scale, or scroll */
   html,
-  body,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   #root,
   #root > div,
   .bg-wood-desk,
@@ -363,12 +374,14 @@
     color: #0f172a !important;
     box-shadow: none !important;
     border: none !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
-  /* Hide all UI chrome during print */
+  /* Completely hide all UI chrome, interactive elements, navigation, and badges during print */
   .no-print,
+  button,
+  input,
+  select,
+  textarea,
   .bottom-nav,
   aside,
   header,
@@ -379,7 +392,33 @@
   [aria-label="Desktop navigation"],
   .network-indicator,
   .pwa-toast,
-  .install-banner {
+  .install-banner,
+  .toast-container {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* CRITICAL: Completely hide ALL modals, dialogs, overlays, and backdrops from print */
+  [role="dialog"],
+  dialog,
+  [aria-modal="true"],
+  .fixed,
+  .backdrop-blur-xs,
+  .modal-backdrop,
+  .animate-fadeIn,
+  .animate-slideUp {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* When a printable statement or invoice is present, hide the underlying screen pages */
+  body:has(.print-only) main > *:not(.print-only),
+  body:has(#printable-khata-statement) main > *:not(#printable-khata-statement),
+  body:has(#printable-khata-statement) .bg-parchment-50,
+  body:has(#printable-khata-statement) .bg-paper-lines,
+  body:has(#printable-invoice) main > *:not(.print-only),
+  body:has(#printable-invoice) .bg-parchment-50 {
     display: none !important;
   }
 
@@ -389,13 +428,16 @@
     margin: 8mm 10mm;
   }
 
-  /* Show print-only content */
+  /* Show print-only content cleanly */
   .print-only {
     display: block !important;
+    visibility: visible !important;
+    position: static !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: #ffffff !important;
   }
 
   /* A4 Bill Sheet Print Optimization */

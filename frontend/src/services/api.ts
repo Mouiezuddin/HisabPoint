@@ -74,12 +74,17 @@ api.interceptors.response.use(
         if (refreshRes.data?.access) {
           localStorage.setItem('ledger_access_token', refreshRes.data.access);
         }
+        if (refreshRes.data?.refresh) {
+          localStorage.setItem('ledger_refresh_token', refreshRes.data.refresh);
+        }
         processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem('ledger_access_token');
         localStorage.removeItem('ledger_refresh_token');
+        localStorage.removeItem('ledger_user_cache');
         processQueue(refreshError);
+        window.dispatchEvent(new CustomEvent('hisab:auth-expired'));
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

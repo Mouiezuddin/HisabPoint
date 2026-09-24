@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ResponsiveModal } from './ResponsiveModal';
 import { showToast } from './Toast';
 import { formatCurrency, formatDate } from '../../utils/format';
+import { printKhataStatementDirect } from '../../utils/printStatement';
 import type { Customer, Transaction, BusinessProfile } from '../../types';
 
 // Number to words for Indian numbering system
@@ -174,7 +175,7 @@ export function SendTransactionBillModal({
   }
 
   function handlePrint() {
-    window.print();
+    printKhataStatementDirect(customer, filteredTxns, business, range, displayShopName);
   }
 
   if (!isOpen) return null;

@@ -68,6 +68,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);
 
+  // Listen for session expiry from API interceptor
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      clearTokens();
+      saveUser(null);
+    };
+    window.addEventListener('hisab:auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('hisab:auth-expired', handleAuthExpired);
+  }, [saveUser]);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await authService.login(email, password);
     if (res.access) {

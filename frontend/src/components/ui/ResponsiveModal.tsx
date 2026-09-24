@@ -29,7 +29,7 @@ export function ResponsiveModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 no-print">
       {/* Darkened backdrop */}
       <div
         className="fixed inset-0 bg-leather-950/75 backdrop-blur-xs transition-opacity animate-fadeIn"

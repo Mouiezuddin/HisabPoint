@@ -1,5 +1,4 @@
-import type { Invoice } from '../types/invoice';
-import type { BusinessProfile } from '../types';
+import type { Customer, Transaction, BusinessProfile } from '../types';
 import { formatDateFull } from './format';
 
 // Number to words converter for Indian numbering system
@@ -47,75 +46,71 @@ function formatInr(val: string | number): string {
 }
 
 /**
- * Generate a standalone, pristine A4 paper bill HTML document.
- * This document is completely independent of the main app shell, viewport constraints,
- * responsive styles, or screen background colors.
+ * Generate a standalone, pristine A4 paper Khata Statement HTML document.
+ * Completely isolated from any screen UI, modals, or background elements.
  */
-export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile | null): string {
-  const totalNum = parseFloat(invoice.total_amount) || 0;
-  const taxNum = parseFloat(invoice.tax_amount) || 0;
-  const taxRate = parseFloat(invoice.tax_rate) || 0;
-  const discountNum = parseFloat(invoice.discount_amount) || 0;
-  const subtotalNum = parseFloat(invoice.subtotal) || 0;
-  const paidNum = parseFloat(invoice.paid_amount) || 0;
-  const dueNum = parseFloat(invoice.balance_due) || 0;
-  const amountWords = numberToWords(totalNum);
+export function generateKhataStatementHtml(
+  customer: Customer,
+  transactions: Transaction[],
+  business?: BusinessProfile | null,
+  range: string = 'all',
+  shopNameOverride?: string
+): string {
+  const shopName = business?.shop_name?.trim() || shopNameOverride || 'HisabPoint Merchant';
+  const balanceNum = parseFloat(customer.balance) || 0;
+  const isDue = customer.balance_status === 'due' && balanceNum > 0;
+  const amountWords = numberToWords(balanceNum);
 
-  const isTaxInvoice = taxNum > 0 || Boolean(business?.gstin && business.gstin.trim().length > 0);
-  const docTitle = isTaxInvoice ? 'TAX INVOICE' : 'RETAIL INVOICE / CASH MEMO';
-  const shopName = business?.shop_name?.trim() || 'HisabPoint Merchant';
+  // Filter valid transactions
+  const validTxns = (transactions || []).filter((t) => !t.is_reversed && t.type !== 'reversal');
 
-  const halfTaxRate = taxRate > 0 ? (taxRate / 2).toFixed(2).replace(/\.00$/, '') : '0';
-  const halfTaxAmount = taxNum > 0 ? (taxNum / 2).toFixed(2) : '0.00';
+  let filteredTxns = validTxns;
+  if (range === 'last5') filteredTxns = validTxns.slice(0, 5);
+  else if (range === 'last10') filteredTxns = validTxns.slice(0, 10);
+  else if (range === 'month') {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    filteredTxns = validTxns.filter((t) => t.transaction_date.startsWith(currentMonth));
+  }
 
-  const minRows = 8;
-  const fillerCount = Math.max(0, minRows - (invoice.items?.length || 0));
+  let totalGiven = 0;
+  let totalPaid = 0;
+  filteredTxns.forEach((t) => {
+    const amt = parseFloat(t.amount) || 0;
+    if (t.type === 'credit') totalGiven += amt;
+    else if (t.type === 'payment') totalPaid += amt;
+  });
 
-  const itemsRows = (invoice.items || []).map((item, idx) => `
+  const rangeLabel = range === 'last5' ? 'Last 5 Transactions' : range === 'last10' ? 'Last 10 Transactions' : range === 'month' ? 'This Month' : 'Full Account History';
+
+  const rowsHtml = filteredTxns.length === 0 ? `
     <tr>
-      <td class="text-center font-mono">${idx + 1}</td>
-      <td class="font-medium">${escapeHtml(item.name)}</td>
-      <td class="text-center font-mono text-muted">-</td>
-      <td class="text-center font-bold font-mono">${item.quantity}</td>
-      <td class="text-center text-muted">${escapeHtml(item.unit || 'pcs')}</td>
-      <td class="text-right font-mono">${formatInr(item.unit_price)}</td>
-      <td class="text-right font-bold font-mono">${formatInr(item.amount)}</td>
+      <td colspan="4" style="text-align: center; padding: 18px; color: #64748b; font-style: italic;">
+        No transactions recorded in this period.
+      </td>
     </tr>
-  `).join('');
-
-  const fillerRows = Array.from({ length: fillerCount }).map(() => `
-    <tr class="filler-row">
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
-  `).join('');
-
-  const paymentStatusClass = invoice.payment_status === 'paid'
-    ? 'status-paid'
-    : invoice.payment_status === 'partially_paid'
-    ? 'status-partial'
-    : invoice.payment_status === 'cancelled'
-    ? 'status-cancelled'
-    : 'status-unpaid';
-
-  const statusLabel = invoice.payment_status === 'paid'
-    ? 'PAID'
-    : invoice.payment_status === 'partially_paid'
-    ? 'PARTIALLY PAID'
-    : invoice.payment_status === 'cancelled'
-    ? 'CANCELLED'
-    : 'UNPAID';
+  ` : filteredTxns.map((t) => {
+    const isCredit = t.type === 'credit';
+    return `
+      <tr>
+        <td class="font-mono" style="white-space: nowrap;">${escapeHtml(t.transaction_date)}</td>
+        <td class="font-medium">${escapeHtml(t.description || (isCredit ? 'Credit Entry' : 'Payment Received'))}</td>
+        <td class="text-right font-mono font-bold" style="color: ${isCredit ? '#b91c1c' : '#64748b'};">
+          ${isCredit ? formatInr(t.amount) : '-'}
+        </td>
+        <td class="text-right font-mono font-bold" style="color: ${!isCredit ? '#047857' : '#64748b'};">
+          ${!isCredit ? formatInr(t.amount) : '-'}
+        </td>
+      </tr>
+    `;
+  }).join('');
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Invoice_${escapeHtml(invoice.invoice_number)}_${escapeHtml(invoice.customer_name.replace(/\s+/g, '_'))}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khata_Statement_${escapeHtml(customer.name.replace(/\\s+/g, '_'))}_${new Date().toISOString().split('T')[0]}</title>
   <style>
     @page {
       size: A4 portrait;
@@ -138,13 +133,69 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       print-color-adjust: exact !important;
     }
 
+    /* Interactive toolbar visible only on screen */
+    .screen-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      margin-bottom: 16px;
+    }
+
+    .screen-toolbar .btn-print {
+      background: #059669;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .screen-toolbar .btn-close {
+      background: #475569;
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        padding: 0 !important;
+      }
+      .a4-paper-container {
+        border: 2px solid #0f172a !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+    }
+
     .a4-paper-container {
       width: 100%;
       max-width: 190mm;
-      margin: 0 auto;
+      margin: 12px auto;
       background: #ffffff;
       border: 2px solid #0f172a;
-      padding: 6mm 8mm;
+      padding: 8mm 10mm;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
     }
 
     /* Header */
@@ -157,14 +208,8 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       font-weight: 700;
       color: #475569;
       margin-bottom: 6px;
-    }
-
-    .tag-original {
-      border: 1px solid #64748b;
-      padding: 2px 6px;
-      border-radius: 3px;
-      background: #f8fafc;
-      color: #0f172a;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
     }
 
     .header-content {
@@ -182,31 +227,31 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       gap: 12px;
     }
 
+    .shop-avatar {
+      width: 48px;
+      height: 48px;
+      background: #0f172a;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
     .shop-logo {
-      width: 56px;
-      height: 56px;
+      width: 52px;
+      height: 52px;
       object-fit: contain;
       border: 1px solid #cbd5e1;
       padding: 2px;
       border-radius: 4px;
     }
 
-    .shop-avatar {
-      width: 50px;
-      height: 50px;
-      background: #0f172a;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: 900;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-
     .shop-name {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 900;
       color: #020617;
       text-transform: uppercase;
@@ -239,12 +284,12 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
     }
 
     .doc-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 900;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
       border-bottom: 2px solid #0f172a;
-      padding-bottom: 3px;
+      padding-bottom: 2px;
       display: inline-block;
     }
 
@@ -288,7 +333,7 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
     }
 
     .buyer-name {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 800;
       color: #020617;
       margin-bottom: 2px;
@@ -310,39 +355,7 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       color: #0f172a;
     }
 
-    .status-badge {
-      padding: 1px 6px;
-      border-radius: 3px;
-      font-size: 9px;
-      font-weight: 800;
-      border: 1px solid transparent;
-    }
-
-    .status-paid {
-      background: #dcfce7;
-      border-color: #86efac;
-      color: #14532d;
-    }
-
-    .status-unpaid {
-      background: #ffe4e6;
-      border-color: #fda4af;
-      color: #881337;
-    }
-
-    .status-partial {
-      background: #fef3c7;
-      border-color: #fde68a;
-      color: #78350f;
-    }
-
-    .status-cancelled {
-      background: #e2e8f0;
-      border-color: #cbd5e1;
-      color: #334155;
-    }
-
-    /* Items Table */
+    /* Table */
     .items-table {
       width: 100%;
       border-collapse: collapse;
@@ -352,8 +365,8 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
 
     .items-table th, .items-table td {
       border: 1px solid #0f172a;
-      padding: 5px 6px;
-      font-size: 10px;
+      padding: 6px 8px;
+      font-size: 10.5px;
     }
 
     .items-table th {
@@ -362,11 +375,7 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: #1e293b;
-      font-size: 9px;
-    }
-
-    .filler-row td {
-      height: 22px;
+      font-size: 9.5px;
     }
 
     .text-center { text-align: center; }
@@ -375,7 +384,6 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
     .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .font-bold { font-weight: 700; }
     .font-medium { font-weight: 600; }
-    .text-muted { color: #64748b; }
 
     /* Summary Grid */
     .summary-grid {
@@ -389,10 +397,10 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       padding: 8px 10px;
       border-right: 1px solid #0f172a;
       display: flex;
-      flex-col;
       flex-direction: column;
       justify-content: space-between;
       gap: 8px;
+      background: #ffffff;
     }
 
     .summary-right {
@@ -421,29 +429,8 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
 
     .words-text {
       font-weight: 800;
-      font-size: 10px;
+      font-size: 10.5px;
       color: #0f172a;
-    }
-
-    .tax-breakdown {
-      border: 1px solid #cbd5e1;
-      border-radius: 3px;
-      overflow: hidden;
-      font-size: 9px;
-    }
-
-    .tax-breakdown-header {
-      background: #f1f5f9;
-      padding: 3px 6px;
-      font-weight: 700;
-      border-bottom: 1px solid #cbd5e1;
-      color: #334155;
-    }
-
-    .tax-breakdown-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 6px;
     }
 
     .upi-box {
@@ -475,23 +462,6 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       border-radius: 2px;
     }
 
-    .terms-box {
-      font-size: 8.5px;
-      color: #64748b;
-      line-height: 1.35;
-    }
-
-    .terms-title {
-      font-weight: 800;
-      text-transform: uppercase;
-      color: #334155;
-      margin-bottom: 2px;
-    }
-
-    .terms-box ol {
-      padding-left: 14px;
-    }
-
     .totals-row {
       display: flex;
       justify-content: space-between;
@@ -504,33 +474,38 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       border-top: 2px solid #0f172a;
       border-bottom: 2px solid #0f172a;
       background: #e2e8f0;
-      padding: 6px 6px;
+      padding: 6px;
       margin: 6px 0;
       font-weight: 900;
       font-size: 12px;
       color: #020617;
     }
 
-    .due-row {
-      border-top: 1px dashed #fca5a5;
-      padding-top: 4px;
-      margin-top: 4px;
+    .due-highlight {
       color: #991b1b;
       font-weight: 900;
+    }
+
+    .settled-badge {
+      color: #059669;
+      font-weight: 800;
+      font-size: 10px;
+      text-align: right;
+      padding-top: 4px;
     }
 
     /* Signatures */
     .signatures-block {
       border-top: 2px solid #0f172a;
-      padding-top: 8px;
-      margin-top: 8px;
+      padding-top: 10px;
+      margin-top: 10px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
     }
 
     .disclaimer-block {
-      max-width: 280px;
+      max-width: 300px;
       font-size: 8.5px;
       color: #64748b;
       line-height: 1.35;
@@ -545,7 +520,7 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       font-size: 10px;
       font-weight: 800;
       text-transform: uppercase;
-      margin-bottom: 32px;
+      margin-bottom: 30px;
       color: #0f172a;
     }
 
@@ -562,7 +537,6 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       color: #475569;
     }
 
-    /* Bottom Page Meta */
     .page-footer {
       border-top: 1px solid #cbd5e1;
       padding-top: 4px;
@@ -576,11 +550,24 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
   </style>
 </head>
 <body>
+  <!-- Screen-Only Toolbar for Browsers / Mobile Devices -->
+  <div class="screen-toolbar no-print">
+    <div>
+      <strong>Khata Statement Preview</strong> — ${escapeHtml(customer.name)}
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn-print" onclick="window.print()">
+        <span>🖨️ Save as PDF / Print</span>
+      </button>
+      <button class="btn-close" onclick="window.close()">✕ Close</button>
+    </div>
+  </div>
+
   <div class="a4-paper-container">
     <!-- Top Bar -->
     <div class="top-bar">
-      <span>HisabPoint Smart Billing System</span>
-      <span class="tag-original">Original For Recipient</span>
+      <span>HisabPoint Digital Bahi Khata</span>
+      <span>Official Account Statement</span>
     </div>
 
     <!-- Header Content -->
@@ -603,52 +590,39 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       </div>
 
       <div class="doc-title-block">
-        <h2 class="doc-title">${escapeHtml(docTitle)}</h2>
-        <p class="doc-subtitle">Computer Generated Bill</p>
+        <h2 class="doc-title">KHATA ACCOUNT STATEMENT</h2>
+        <p class="doc-subtitle">Customer Ledger Bill</p>
       </div>
     </div>
 
     <!-- 2-Column Meta Grid -->
     <div class="meta-grid">
       <div class="meta-box">
-        <div class="box-heading">Billed To / Buyer Details</div>
-        <div class="buyer-name">${escapeHtml(invoice.customer_name)}</div>
-        ${invoice.customer_address ? `
-          <p class="shop-meta" style="margin-bottom: 2px;">${escapeHtml(invoice.customer_address)}</p>
-        ` : `
-          <p class="shop-meta text-muted" style="font-style: italic; margin-bottom: 2px;">Counter Sale / Walk-in Customer</p>
-        `}
-        ${invoice.customer_phone ? `
-          <p class="shop-meta font-mono">Phone: ${escapeHtml(invoice.customer_phone)}</p>
-        ` : ''}
-        <p class="shop-meta" style="margin-top: 3px;">
-          Place of Supply: <strong>Local (Within State)</strong>
-        </p>
+        <div class="box-heading">CUSTOMER DETAILS</div>
+        <div class="buyer-name">${escapeHtml(customer.name)}</div>
+        ${customer.phone ? `<p class="shop-meta font-mono">Phone: ${escapeHtml(customer.phone)}</p>` : ''}
+        ${customer.address ? `<p class="shop-meta">${escapeHtml(customer.address)}</p>` : ''}
       </div>
 
       <div class="meta-box">
-        <div class="box-heading">Invoice Particulars</div>
+        <div class="box-heading">STATEMENT DETAILS</div>
         <div class="meta-row">
-          <span class="meta-label">Invoice No:</span>
-          <span class="meta-value font-mono">${escapeHtml(invoice.invoice_number)}</span>
+          <span class="meta-label">Date:</span>
+          <span class="meta-value">${escapeHtml(formatDateFull(new Date().toISOString().split('T')[0]))}</span>
         </div>
         <div class="meta-row">
-          <span class="meta-label">Invoice Date:</span>
-          <span class="meta-value">${escapeHtml(formatDateFull(invoice.invoice_date))}</span>
+          <span class="meta-label">Period / Filter:</span>
+          <span class="meta-value">${escapeHtml(rangeLabel)}</span>
         </div>
-        ${invoice.due_date ? `
-          <div class="meta-row">
-            <span class="meta-label">Due Date:</span>
-            <span class="meta-value">${escapeHtml(formatDateFull(invoice.due_date))}</span>
-          </div>
-        ` : ''}
         <div class="meta-row">
-          <span class="meta-label">Payment Mode:</span>
-          <span class="meta-value" style="text-transform: uppercase;">${invoice.payment_mode === 'credit' ? 'Credit (Udhar)' : escapeHtml(invoice.payment_mode)}</span>
+          <span class="meta-label">Total Entries:</span>
+          <span class="meta-value font-mono">${filteredTxns.length}</span>
         </div>
-        <div class="meta-row" style="margin-top: 3px;">
-          <span class="meta-label">Payment Status:</span>
-          <span class="status-badge ${paymentStatusClass}">${statusLabel}</span>
+        <div class="meta-row">
+          <span class="meta-label">Account Status:</span>
+          <span class="meta-value ${isDue ? 'due-highlight' : ''}">
+            ${isDue ? 'DUE (PENDING)' : 'SETTLED'}
+          </span>
         </div>
       </div>
     </div>
@@ -657,110 +631,59 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
     <table class="items-table">
       <thead>
         <tr>
-          <th style="width: 28px;" class="text-center">#</th>
-          <th class="text-left">Description of Goods / Services</th>
-          <th style="width: 55px;" class="text-center">HSN/SAC</th>
-          <th style="width: 45px;" class="text-center">Qty</th>
-          <th style="width: 45px;" class="text-center">Unit</th>
-          <th style="width: 70px;" class="text-right">Rate (₹)</th>
-          <th style="width: 80px;" class="text-right">Amount (₹)</th>
+          <th style="width: 85px;" class="text-left">Date</th>
+          <th class="text-left">Particulars / Description</th>
+          <th style="width: 100px;" class="text-right">Credit (Given)</th>
+          <th style="width: 100px;" class="text-right">Payment (Paid)</th>
         </tr>
       </thead>
       <tbody>
-        ${itemsRows}
-        ${fillerRows}
+        ${rowsHtml}
       </tbody>
     </table>
 
     <!-- Summary Grid -->
     <div class="summary-grid">
-      <!-- Left Column -->
       <div class="summary-left">
         <div class="words-box">
-          <span class="words-label">Amount Chargeable in Words:</span>
+          <span class="words-label">Outstanding Balance in Words:</span>
           <span class="words-text">${escapeHtml(amountWords)}</span>
         </div>
 
-        ${taxNum > 0 ? `
-          <div class="tax-breakdown">
-            <div class="tax-breakdown-header">Intra-State GST Breakdown</div>
-            <div class="tax-breakdown-row">
-              <span>CGST (${escapeHtml(halfTaxRate)}%): <strong>₹${halfTaxAmount}</strong></span>
-              <span>SGST (${escapeHtml(halfTaxRate)}%): <strong>₹${halfTaxAmount}</strong></span>
-              <span>Total Tax: <strong>₹${escapeHtml(invoice.tax_amount)}</strong></span>
-            </div>
-          </div>
-        ` : ''}
-
         <div class="upi-box">
           <div class="upi-box-header">
-            <span>Scan & Pay via UPI</span>
+            <span>Settle via UPI</span>
             <span class="upi-badge">Instant Settlement</span>
           </div>
-          <p>UPI ID: <strong class="font-mono">${escapeHtml(business?.phone ? `${business.phone}@upi` : `${shopName.replace(/\s+/g, '').toLowerCase()}@upi`)}</strong></p>
+          <p>UPI ID: <strong class="font-mono">${escapeHtml(business?.phone ? `${business.phone}@upi` : `${shopName.replace(/\\s+/g, '').toLowerCase()}@upi`)}</strong></p>
           <p style="font-size: 8px; color: #64748b; margin-top: 1px;">Google Pay • PhonePe • Paytm • BHIM UPI</p>
-        </div>
-
-        <div class="terms-box">
-          <p class="terms-title">Terms & Conditions:</p>
-          <ol>
-            <li>${escapeHtml(invoice.terms || 'Goods once sold will not be accepted back or exchanged.')}</li>
-            <li>Subject to local jurisdiction only. E. & O.E.</li>
-          </ol>
-          ${invoice.notes ? `
-            <p style="margin-top: 3px; font-weight: 600; color: #334155;">Note: ${escapeHtml(invoice.notes)}</p>
-          ` : ''}
         </div>
       </div>
 
-      <!-- Right Column -->
       <div class="summary-right">
         <div>
           <div class="totals-row">
-            <span class="text-muted">Subtotal (Taxable):</span>
-            <span class="font-mono font-bold">${formatInr(subtotalNum)}</span>
+            <span style="color: #64748b;">Total Credit Given:</span>
+            <span class="font-mono font-bold" style="color: #991b1b;">${formatInr(totalGiven)}</span>
           </div>
 
-          ${discountNum > 0 ? `
-            <div class="totals-row" style="color: #047857;">
-              <span>Discount ${invoice.discount_type === 'percentage' ? `(${invoice.discount_value}%)` : ''}:</span>
-              <span class="font-mono font-bold">- ${formatInr(discountNum)}</span>
-            </div>
-          ` : ''}
-
-          ${taxNum > 0 ? `
-            <div class="totals-row">
-              <span class="text-muted">GST (${escapeHtml(invoice.tax_rate)}%):</span>
-              <span class="font-mono font-bold">+ ${formatInr(taxNum)}</span>
-            </div>
-          ` : ''}
+          <div class="totals-row">
+            <span style="color: #64748b;">Total Payments Received:</span>
+            <span class="font-mono font-bold" style="color: #047857;">${formatInr(totalPaid)}</span>
+          </div>
 
           <div class="totals-row totals-grand">
-            <span>GRAND TOTAL:</span>
-            <span class="font-mono">${formatInr(totalNum)}</span>
+            <span>OUTSTANDING DUE:</span>
+            <span class="font-mono ${isDue ? 'due-highlight' : ''}">${formatInr(balanceNum)}</span>
           </div>
 
-          ${paidNum > 0 ? `
-            <div class="totals-row" style="color: #065f46;">
-              <span>Amount Received / Paid:</span>
-              <span class="font-mono font-bold">${formatInr(paidNum)}</span>
-            </div>
+          ${!isDue ? `
+            <div class="settled-badge">✓ Full Account Settled</div>
           ` : ''}
-
-          ${dueNum > 0 ? `
-            <div class="totals-row due-row">
-              <span>BALANCE DUE (UDHAR):</span>
-              <span class="font-mono">${formatInr(dueNum)}</span>
-            </div>
-          ` : `
-            <div class="text-right" style="color: #059669; font-weight: 800; font-size: 9.5px; margin-top: 4px;">
-              ✓ Full Payment Received
-            </div>
-          `}
         </div>
 
         <div style="border-top: 1px solid #cbd5e1; padding-top: 4px; text-align: center; margin-top: 6px;">
-          <span style="font-size: 8.5px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-family: monospace;">
+          <span style="font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-family: monospace;">
             HisabPoint Ledger Verified
           </span>
         </div>
@@ -770,8 +693,8 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
     <!-- Signatures Block -->
     <div class="signatures-block">
       <div class="disclaimer-block">
-        <p style="font-style: italic;">"Certified that the particulars given above are true and correct."</p>
-        <p style="margin-top: 2px;">This is a computer generated invoice and does not require a physical signature.</p>
+        <p style="font-style: italic;">Computer generated statement from HisabPoint Bahi Khata.</p>
+        <p style="margin-top: 2px;">Thank you for your business!</p>
       </div>
 
       <div class="sig-box">
@@ -784,24 +707,43 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
     <!-- Page Footer -->
     <div class="page-footer">
       <span>Page 1 of 1</span>
-      <span>Generated by HisabPoint • ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-      <span>Thank you for your business!</span>
+      <span>Statement generated on ${escapeHtml(formatDateFull(new Date().toISOString().split('T')[0]))}</span>
+      <span>HisabPoint • 100% Safe & Secure</span>
     </div>
   </div>
+
+  <script>
+    // Automatically trigger print on document load
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        try {
+          window.focus();
+          window.print();
+        } catch (e) {
+          console.warn('Auto print failed:', e);
+        }
+      }, 300);
+    });
+  </script>
 </body>
 </html>`;
 }
 
 /**
- * Trigger an isolated, clean print dialog specifically for the A4 bill.
- * Creates an invisible iframe to completely bypass the main window's screen layout,
- * viewport meta tags, dark mode, navigation, and margins.
- * When the user selects "Save as PDF", the browser outputs a pure, clean, vector A4 PDF.
+ * Triggers clean, standalone printing of the Khata Account Statement.
+ * Completely isolates the output so it NEVER captures the app UI, modals, or screen backgrounds.
  */
-export function printInvoiceDirect(invoice: Invoice, business?: BusinessProfile | null): void {
-  const html = generateInvoiceHtml(invoice, business);
+export function printKhataStatementDirect(
+  customer: Customer,
+  transactions: Transaction[],
+  business?: BusinessProfile | null,
+  range: string = 'all',
+  shopNameOverride?: string
+): void {
+  const html = generateKhataStatementHtml(customer, transactions, business, range, shopNameOverride);
 
-  // Strategy 1: Open a clean dedicated window (best for mobile Chrome / iOS / desktop)
+  // Strategy 1: Open a dedicated printable tab/window.
+  // This is the cleanest and most reliable strategy on both Mobile Android/iOS and Desktop.
   try {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -814,14 +756,14 @@ export function printInvoiceDirect(invoice: Invoice, business?: BusinessProfile 
     console.warn('window.open blocked, falling back to hidden iframe:', err);
   }
 
-  // Strategy 2: Remove existing print iframe if any and use iframe fallback
-  const existingFrame = document.getElementById('hisabpoint-invoice-print-frame');
+  // Strategy 2: Hidden iframe fallback if popup was blocked
+  const existingFrame = document.getElementById('hisabpoint-statement-print-frame');
   if (existingFrame && existingFrame.parentNode) {
     existingFrame.parentNode.removeChild(existingFrame);
   }
 
   const iframe = document.createElement('iframe');
-  iframe.id = 'hisabpoint-invoice-print-frame';
+  iframe.id = 'hisabpoint-statement-print-frame';
   iframe.style.position = 'fixed';
   iframe.style.right = '0';
   iframe.style.bottom = '0';
@@ -834,7 +776,6 @@ export function printInvoiceDirect(invoice: Invoice, business?: BusinessProfile 
 
   const doc = iframe.contentWindow?.document;
   if (!doc) {
-    // Fallback to window.print if iframe document is unavailable
     window.print();
     return;
   }
@@ -843,21 +784,19 @@ export function printInvoiceDirect(invoice: Invoice, business?: BusinessProfile 
   doc.write(html);
   doc.close();
 
-  // Wait for images (e.g. logo) and fonts to settle before printing
   setTimeout(() => {
     try {
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
     } catch (e) {
-      console.warn('Iframe print failed, falling back to window.print', e);
+      console.warn('Iframe print failed, falling back to window.print:', e);
       window.print();
     } finally {
-      // Remove iframe after print dialog completes
       setTimeout(() => {
         if (iframe.parentNode) {
           iframe.parentNode.removeChild(iframe);
         }
       }, 2500);
     }
-  }, 300);
+  }, 350);
 }

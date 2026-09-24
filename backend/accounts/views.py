@@ -256,7 +256,10 @@ def cookie_refresh_token_view(request):
     """POST /api/auth/token/refresh/ — refreshes access token using cookie or payload."""
     refresh_token = request.COOKIES.get("refresh_token") or request.data.get("refresh")
     if not refresh_token:
-        return Response({"message": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": "Your session has expired. Please sign in again."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
 
     try:
         token = RefreshToken(refresh_token)
@@ -264,7 +267,10 @@ def cookie_refresh_token_view(request):
         res = Response({"access": new_access, "refresh": str(refresh_token)})
         return set_jwt_cookies(res, new_access, refresh_token)
     except Exception:
-        res = Response({"message": "Token is invalid or expired."}, status=status.HTTP_401_UNAUTHORIZED)
+        res = Response(
+            {"message": "Your session has expired. Please sign in again."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
         return clear_jwt_cookies(res)
 
 

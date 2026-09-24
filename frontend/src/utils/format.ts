@@ -80,14 +80,17 @@ export function getErrorMessage(error: unknown): string {
       const resp = (error as { response?: { data?: Record<string, unknown>; status?: number } }).response;
       const data = resp?.data;
       if (data && typeof data === 'object') {
-        if (typeof data.message === 'string' && data.message) {
-          return data.message;
-        }
-        if (typeof data.error === 'string' && data.error) {
-          return data.error;
-        }
-        if (typeof data.detail === 'string' && data.detail) {
-          return data.detail;
+        const rawMsg = (typeof data.message === 'string' && data.message)
+          || (typeof data.error === 'string' && data.error)
+          || (typeof data.detail === 'string' && data.detail)
+          || '';
+
+        if (rawMsg) {
+          const lower = rawMsg.toLowerCase();
+          if (lower.includes('refresh token') || lower.includes('token is invalid') || lower.includes('token is expired')) {
+            return 'Your session has expired. Please sign in again.';
+          }
+          return rawMsg;
         }
         // Check for field-specific errors e.g. { email: ["User already exists."] }
         for (const val of Object.values(data)) {
