@@ -74,10 +74,14 @@ class CustomerTransactionListCreateView(generics.ListCreateAPIView):
         )
 
 
-class TransactionDetailView(generics.RetrieveUpdateAPIView):
+from django.db import transaction as db_transaction
+
+
+class TransactionDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    GET   /api/transactions/{id}/  — transaction detail
-    PATCH /api/transactions/{id}/  — update description/date (not type/amount)
+    GET    /api/transactions/{id}/  — transaction detail
+    PATCH  /api/transactions/{id}/  — update description/date (not type/amount)
+    DELETE /api/transactions/{id}/  — permanently delete transaction and leave no history
     """
 
     serializer_class = TransactionSerializer
@@ -118,6 +122,28 @@ class TransactionDetailView(generics.RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        txn = self.get_object()
+        customer = txn.customer
+
+        with db_transaction.atomic():
+            # If this transaction has reversals, delete them too so no trace or history remains
+            Transaction.objects.filter(reversal_of=txn).delete()
+            # If linked to an invoice, clear the reference
+            if hasattr(txn, "invoice") and txn.invoice:
+                txn.invoice.ledger_transaction = None
+                txn.invoice.save(update_fields=["ledger_transaction"])
+            txn.delete()
+
+        new_balance = calculate_balance(customer)
+        return Response(
+            {
+                "message": "Transaction permanently deleted.",
+                "balance": str(new_balance),
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @api_view(["POST"])

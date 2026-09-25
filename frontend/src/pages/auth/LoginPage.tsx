@@ -23,6 +23,7 @@ export function LoginPage() {
   // Rate Limiting & Lockout State
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // 2FA Challenge State
   const [twoFaPending, setTwoFaPending] = useState(false);
@@ -30,8 +31,15 @@ export function LoginPage() {
   const [twoFaCode, setTwoFaCode] = useState('');
   const [twoFaLoading, setTwoFaLoading] = useState(false);
 
-  // Initialize lockout and failed attempts from localStorage on mount
+  // Initialize lockout, failed attempts, and check for ?demo=true on mount
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('demo') === 'true') {
+      setEmail('demo@hisabpoint.com');
+      setPassword('demo1234');
+      setIsDemoMode(true);
+    }
+
     const storedUntil = localStorage.getItem('hisab_login_lockout_until');
     if (storedUntil) {
       const lockoutUntil = parseInt(storedUntil, 10);
@@ -307,6 +315,18 @@ export function LoginPage() {
                       <span>
                         <strong>Security Notice:</strong> {remainingAttempts} {remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining before a 30-minute lockout.
                       </span>
+                    </div>
+                  )}
+
+                  {isDemoMode && !error && (
+                    <div className="bg-emerald-50 border border-emerald-400 text-emerald-900 rounded-xl px-3.5 py-2.5 text-xs font-semibold flex items-center justify-between shadow-sm animate-fade-in">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">⚡</span>
+                        <span>
+                          <strong>Demo Mode Active:</strong> Test credentials loaded. Click <strong>Sign In to Khata</strong> below!
+                        </span>
+                      </div>
+                      <span className="bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded text-[10px] font-bold">Product Hunt</span>
                     </div>
                   )}
 

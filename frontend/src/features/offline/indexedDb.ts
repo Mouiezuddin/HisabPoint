@@ -76,25 +76,33 @@ export function openLocalDatabase(): Promise<IDBDatabase> {
 // ----------------------------------------------------
 
 export async function saveCustomersLocal(customers: (Customer | CustomerListItem)[]): Promise<void> {
-  const db = await openLocalDatabase();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('customers', 'readwrite');
-    const store = tx.objectStore('customers');
-    customers.forEach((c) => store.put(c));
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+  try {
+    const db = await openLocalDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('customers', 'readwrite');
+      const store = tx.objectStore('customers');
+      customers.forEach((c) => store.put(c));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    // Gracefully handle environments without IndexedDB (e.g. SSR, test runners)
+  }
 }
 
 export async function saveCustomerLocal(customer: Customer | CustomerListItem): Promise<void> {
-  const db = await openLocalDatabase();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('customers', 'readwrite');
-    const store = tx.objectStore('customers');
-    store.put(customer);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+  try {
+    const db = await openLocalDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('customers', 'readwrite');
+      const store = tx.objectStore('customers');
+      store.put(customer);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    // Gracefully handle environments without IndexedDB
+  }
 }
 
 export async function getCustomersLocal(): Promise<CustomerListItem[]> {
@@ -151,6 +159,17 @@ export async function saveTransactionLocal(transaction: Transaction): Promise<vo
     const tx = db.transaction('transactions', 'readwrite');
     const store = tx.objectStore('transactions');
     store.put(transaction);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function removeTransactionLocal(id: string): Promise<void> {
+  const db = await openLocalDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('transactions', 'readwrite');
+    const store = tx.objectStore('transactions');
+    store.delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

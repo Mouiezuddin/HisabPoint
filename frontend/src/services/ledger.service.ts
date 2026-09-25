@@ -36,6 +36,13 @@ export const ledgerService = {
     return res.data;
   },
 
+  async deleteTransaction(
+    id: string
+  ): Promise<{ message: string; balance?: string }> {
+    const res = await api.delete(`/transactions/${id}/`);
+    return res.data;
+  },
+
   async getDashboard(): Promise<DashboardData> {
     const res = await api.get('/dashboard/');
     return res.data;

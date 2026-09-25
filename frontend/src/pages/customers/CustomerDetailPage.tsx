@@ -19,6 +19,7 @@ import {
   getCustomerLocal,
   saveTransactionsLocal,
   getTransactionsLocal,
+  removeTransactionLocal,
 } from '../../features/offline/indexedDb';
 
 export function CustomerDetailPage() {
@@ -31,6 +32,7 @@ export function CustomerDetailPage() {
   const [quickTxnModal, setQuickTxnModal] = useState<{ open: boolean; type?: 'credit' | 'payment' }>({ open: false });
   const [showArchive, setShowArchive] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [deletingTxn, setDeletingTxn] = useState<Transaction | null>(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showBillModal, setShowBillModal] = useState(false);
   const [showUpiModal, setShowUpiModal] = useState(false);
@@ -103,6 +105,30 @@ export function CustomerDetailPage() {
       navigate('/customers', { replace: true });
     },
     onError: (err) => showToast(getErrorMessage(err), 'error'),
+  });
+
+  const deleteTxnMutation = useMutation({
+    mutationFn: async (txnId: string) => {
+      try {
+        await removeTransactionLocal(txnId);
+      } catch {
+        // Ignore local store error
+      }
+      return ledgerService.deleteTransaction(txnId);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions', id] });
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      showToast(result.message || 'Transaction permanently deleted.', 'success');
+      setDeletingTxn(null);
+    },
+    onError: (err) => {
+      showToast(getErrorMessage(err), 'error');
+      setDeletingTxn(null);
+    },
   });
 
   if (loadingCustomer) return <LoadingState message="Opening customer ledger page…" />;
@@ -309,7 +335,7 @@ export function CustomerDetailPage() {
                   return (
                     <div
                       key={t.id}
-                      onClick={() => navigate(`/ledger/transaction/${t.id}`)}
+                      onClick={() => navigate(`/transactions/${t.id}`)}
                       className="p-4 hover:bg-parchment-100 cursor-pointer transition-colors space-y-1.5"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -326,13 +352,26 @@ export function CustomerDetailPage() {
                             📅 {t.transaction_date}
                           </p>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className={`font-black font-serif font-tabular text-base ${isCredit ? 'text-rose-800' : 'text-emerald-800'}`}>
-                            {isCredit ? '+' : '-'}₹{t.amount}
-                          </p>
-                          <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md ${isCredit ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                            {isCredit ? 'Given' : 'Received'}
-                          </span>
+                        <div className="text-right flex-shrink-0 flex items-center gap-2">
+                          <div>
+                            <p className={`font-black font-serif font-tabular text-base ${isCredit ? 'text-rose-800' : 'text-emerald-800'}`}>
+                              {isCredit ? '+' : '-'}₹{t.amount}
+                            </p>
+                            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md ${isCredit ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                              {isCredit ? 'Given' : 'Received'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingTxn(t);
+                            }}
+                            className="p-2 text-stone-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors ml-1"
+                            title="Delete transaction permanently"
+                          >
+                            <span className="text-xs">🗑️</span>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -350,6 +389,7 @@ export function CustomerDetailPage() {
                       <th className="py-3 px-4">Type</th>
                       <th className="py-3 px-4 text-right">Amount</th>
                       <th className="py-3 px-4 text-right">Balance</th>
+                      <th className="py-3 px-4 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-parchment-200 font-medium">
@@ -358,7 +398,7 @@ export function CustomerDetailPage() {
                       return (
                         <tr
                           key={t.id}
-                          onClick={() => navigate(`/ledger/transaction/${t.id}`)}
+                          onClick={() => navigate(`/transactions/${t.id}`)}
                           className="hover:bg-parchment-100 cursor-pointer transition-colors"
                         >
                           <td className="py-3.5 px-4 text-stone-600 font-mono text-[11px]">{t.transaction_date}</td>
@@ -370,6 +410,19 @@ export function CustomerDetailPage() {
                             {isCredit ? '+' : '-'}₹{t.amount}
                           </td>
                           <td className="py-3.5 px-4 text-right font-black font-serif font-tabular text-rose-800">₹{customer.balance}</td>
+                          <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingTxn(t);
+                              }}
+                              className="p-1.5 text-stone-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="Delete transaction permanently"
+                            >
+                              <span className="text-sm">🗑️</span>
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -443,6 +496,18 @@ export function CustomerDetailPage() {
             : `Are you sure you want to delete ${customer.name}? This will permanently remove the customer and all associated ledger transactions. This action cannot be undone.`
         }
         confirmLabel="Delete Permanently"
+        confirmVariant="danger"
+      />
+
+      {/* Delete Transaction Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={!!deletingTxn}
+        onClose={() => setDeletingTxn(null)}
+        onConfirm={() => deletingTxn && deleteTxnMutation.mutate(deletingTxn.id)}
+        loading={deleteTxnMutation.isPending}
+        title="Permanently Delete Entry?"
+        message={`Are you sure you want to permanently delete this ${deletingTxn?.type || ''} entry of ${deletingTxn ? formatCurrency(deletingTxn.amount) : ''}? It will be completely removed and leave no history in your records. The customer balance will automatically update. This action cannot be undone.`}
+        confirmLabel="Yes, Delete Permanently"
         confirmVariant="danger"
       />
     </div>

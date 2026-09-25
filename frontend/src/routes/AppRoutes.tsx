@@ -135,6 +135,11 @@ export function AppRoutes() {
             <AppLayout><TransactionDetailPage /></AppLayout>
           </ProtectedRoute>
         } />
+        <Route path="/ledger/transaction/:id" element={
+          <ProtectedRoute>
+            <AppLayout><TransactionDetailPage /></AppLayout>
+          </ProtectedRoute>
+        } />
         <Route path="/reports" element={
           <ProtectedRoute>
             <AppLayout><ReportsPage /></AppLayout>

@@ -200,3 +200,78 @@ class AuthorizationTestCase(TestCase):
         # User A attempts to reverse User B's transaction -> HTTP 404
         res = client.post(f"/api/transactions/{txn_b.id}/reverse/")
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_idor_api_cross_user_transaction_delete_rejected(self):
+        from rest_framework.test import APIClient
+        from rest_framework import status
+
+        client = APIClient()
+        client.force_authenticate(user=self.user_a)
+
+        txn_b = create_transaction(
+            self.customer_b, TransactionType.CREDIT, "2000", "B's Item", date.today(), self.user_b
+        )
+
+        # User A attempts to delete User B's transaction -> HTTP 404
+        res = client.delete(f"/api/transactions/{txn_b.id}/")
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Transaction.objects.filter(id=txn_b.id).exists())
+
+
+class TransactionDeletionTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="merchant@test.com",
+            name="Merchant Test",
+            password="testpass123",
+        )
+        self.customer = Customer.objects.create(
+            user=self.user,
+            name="Customer One",
+            phone="9123456780",
+        )
+        self.today = date.today()
+
+    def test_delete_transaction_removes_entry_and_adjusts_balance(self):
+        from rest_framework.test import APIClient
+        from rest_framework import status
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        txn1 = create_transaction(
+            self.customer, TransactionType.CREDIT, "1500", "Initial Item", self.today, self.user
+        )
+        txn2 = create_transaction(
+            self.customer, TransactionType.PAYMENT, "500", "Partial Paid", self.today, self.user
+        )
+        self.assertEqual(calculate_balance(self.customer), Decimal("1000.00"))
+
+        # Delete txn1 permanently
+        res = client.delete(f"/api/transactions/{txn1.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(Transaction.objects.filter(id=txn1.id).exists())
+
+        # Balance should now be 0 - 500 = -500.00
+        self.assertEqual(calculate_balance(self.customer), Decimal("-500.00"))
+
+    def test_delete_transaction_cleans_up_reversal_history(self):
+        from rest_framework.test import APIClient
+        from rest_framework import status
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        txn = create_transaction(
+            self.customer, TransactionType.CREDIT, "800", "Item X", self.today, self.user
+        )
+        reversal = reverse_transaction(txn, self.user)
+        self.assertTrue(Transaction.objects.filter(reversal_of=txn).exists())
+
+        # Delete original transaction -> reversal should also be removed with no history left
+        res = client.delete(f"/api/transactions/{txn.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(Transaction.objects.filter(id=txn.id).exists())
+        self.assertFalse(Transaction.objects.filter(id=reversal.id).exists())
+        self.assertEqual(calculate_balance(self.customer), Decimal("0.00"))
+

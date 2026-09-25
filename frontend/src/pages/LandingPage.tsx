@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePWA } from '../features/pwa/usePWA';
 import { InstallAppModal } from '../components/pwa/InstallAppModal';
+import { ProductHuntBanner } from '../components/ui/ProductHuntBanner';
+import { ProductHuntModal } from '../components/ui/ProductHuntModal';
 
 type ModalType = 'how-it-works' | 'features' | 'benefits' | 'pricing' | 'reviews' | 'faq' | null;
 
@@ -31,6 +33,9 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f4ea] text-[#2c2825] font-sans selection:bg-[#194a32] selection:text-white flex flex-col antialiased">
+      {/* ── PRODUCT HUNT LAUNCH BANNER ───────────────────────────────────── */}
+      <ProductHuntBanner />
+
       {/* ── TOP HEADER NAVBAR ────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-[#f7f4ea]/95 backdrop-blur-md border-b border-[#e5dec8] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -153,6 +158,15 @@ export function LandingPage() {
               className="px-6 py-4 text-base font-bold text-[#194a32] bg-[#ece5d5] hover:bg-[#e2d8c3] border border-[#cfc4a6] rounded-xl transition-all flex items-center gap-2 shadow-sm"
             >
               <span>Get Started Free</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/login?demo=true')}
+              id="hero-btn-demo"
+              className="px-6 py-4 text-base font-bold text-[#194a32] bg-[#fef3c7] hover:bg-[#fde68a] border border-[#f59e0b]/50 rounded-xl transition-all flex items-center gap-2 shadow-sm"
+              title="Test drive with pre-filled demo store data"
+            >
+              <span>⚡ Try Live Demo</span>
             </button>
 
             <button
@@ -758,8 +772,17 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcd3bc] pt-6 text-center text-xs text-[#786f62]">
-          © 2026 HisabPoint. All rights reserved.
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcd3bc] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#786f62]">
+          <span>© 2026 HisabPoint. All rights reserved.</span>
+          <a
+            href="https://www.producthunt.com/posts/hisabpoint"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#d6cbaf] hover:border-[#ff6154] text-[#2c2825] hover:text-[#d84a3e] transition-all shadow-xs"
+          >
+            <span className="text-[#ff6154] font-black text-sm">🐱</span>
+            <span className="font-bold text-[11px]">Featured on Product Hunt</span>
+          </a>
         </div>
       </footer>
 
@@ -829,6 +852,9 @@ export function LandingPage() {
         isOpen={showInstallModal}
         onClose={() => setShowInstallModal(false)}
       />
+
+      {/* Product Hunt Personalized Welcome Modal (?ref=producthunt) */}
+      <ProductHuntModal />
     </div>
   );
 }

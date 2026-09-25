@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ledgerService } from '../../services/ledger.service';
+import { removeTransactionLocal } from '../../features/offline/indexedDb';
 import { LoadingState, ErrorState } from '../../components/ui/LedgerComponents';
 import { ConfirmDialog } from '../../components/ui/Modal';
 import { showToast } from '../../components/ui/Toast';
@@ -12,6 +13,7 @@ export function TransactionDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showReverse, setShowReverse] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   const { data: txn, isLoading, isError, refetch } = useQuery({
     queryKey: ['transaction', id],
@@ -25,11 +27,37 @@ export function TransactionDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['transactions', txn?.customer] });
       queryClient.invalidateQueries({ queryKey: ['customer', txn?.customer] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       showToast(result.message, 'success');
       navigate(-1);
     },
     onError: (err) => {
       setShowReverse(false);
+      showToast(getErrorMessage(err), 'error');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        await removeTransactionLocal(id!);
+      } catch {
+        // Ignore offline store errors
+      }
+      return ledgerService.deleteTransaction(id!);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions', txn?.customer] });
+      queryClient.invalidateQueries({ queryKey: ['customer', txn?.customer] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      showToast(result.message || 'Transaction permanently deleted.', 'success');
+      navigate(-1);
+    },
+    onError: (err) => {
+      setShowDelete(false);
       showToast(getErrorMessage(err), 'error');
     },
   });
@@ -45,15 +73,25 @@ export function TransactionDetailPage() {
   return (
     <div className="max-w-xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-8 h-8 rounded-full bg-parchment-200 hover:bg-parchment-300 flex items-center justify-center font-bold text-stone-800 text-sm"
+            aria-label="Back"
+          >
+            ←
+          </button>
+          <h1 className="text-2xl font-black font-serif text-stone-900">Transaction Details</h1>
+        </div>
         <button
-          onClick={() => navigate(-1)}
-          className="w-8 h-8 rounded-full bg-parchment-200 hover:bg-parchment-300 flex items-center justify-center font-bold text-stone-800 text-sm"
-          aria-label="Back"
+          onClick={() => setShowDelete(true)}
+          className="text-stone-400 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 transition-colors"
+          title="Delete Transaction Permanently"
+          id="btn-delete-txn-header"
         >
-          ←
+          <span className="text-lg">🗑️</span>
         </button>
-        <h1 className="text-2xl font-black font-serif text-stone-900">Transaction Details</h1>
       </div>
 
       {/* Main parchment card */}
@@ -102,13 +140,32 @@ export function TransactionDetailPage() {
           </p>
           <button
             onClick={() => setShowReverse(true)}
-            className="w-full btn-parchment-bevel py-3 text-xs font-bold rounded-xl text-rose-800 flex items-center justify-center gap-2"
+            className="w-full btn-parchment-bevel py-3 text-xs font-bold rounded-xl text-stone-800 flex items-center justify-center gap-2"
             id="reverse-btn"
           >
-            <span>↺ Reverse Transaction</span>
+            <span>↺ Reverse Transaction (Keep Audit Trail)</span>
           </button>
         </div>
       )}
+
+      {/* Permanent Delete action (No History) */}
+      <div className="bg-parchment-50 rounded-2xl p-5 border-2 border-rose-200 shadow-md space-y-3">
+        <div className="space-y-1">
+          <p className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+            <span>🗑️ Permanently Delete Entry</span>
+          </p>
+          <p className="text-xs font-medium text-stone-600">
+            Completely remove this entry with no history or trace. The customer's balance will be automatically recalculated.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowDelete(true)}
+          className="w-full py-3 text-xs font-bold rounded-xl text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 flex items-center justify-center gap-2 transition-colors"
+          id="btn-delete-txn-permanent"
+        >
+          <span>🗑️ Delete Permanently (No History)</span>
+        </button>
+      </div>
 
       <ConfirmDialog
         isOpen={showReverse}
@@ -118,6 +175,17 @@ export function TransactionDetailPage() {
         title="Reverse transaction?"
         message={`This will create a reversal record for ${formatCurrency(txn.amount)}. The original transaction remains in history for audit purposes.`}
         confirmLabel="Yes, Reverse"
+        confirmVariant="danger"
+      />
+
+      <ConfirmDialog
+        isOpen={showDelete}
+        onClose={() => setShowDelete(false)}
+        onConfirm={() => deleteMutation.mutate()}
+        loading={deleteMutation.isPending}
+        title="Permanently Delete Entry?"
+        message={`Are you sure you want to permanently delete this ${txn.type} entry of ${formatCurrency(txn.amount)}? It will be completely removed and leave no history in your records. The customer balance will automatically update. This action cannot be undone.`}
+        confirmLabel="Yes, Delete Permanently"
         confirmVariant="danger"
       />
     </div>
