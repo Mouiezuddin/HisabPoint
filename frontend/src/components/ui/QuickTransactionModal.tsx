@@ -6,7 +6,7 @@ import { ledgerService } from '../../services/ledger.service';
 import { ResponsiveModal } from './ResponsiveModal';
 import { AmountInput } from './AmountInput';
 import { showToast } from './Toast';
-import { todayAsInputDate, getErrorMessage } from '../../utils/format';
+import { todayAsInputDate, todayAsInputTime, getErrorMessage } from '../../utils/format';
 import {
   saveCustomersLocal,
   getCustomersLocal,
@@ -36,6 +36,7 @@ export function QuickTransactionModal({
   const [amount, setAmount] = useState('');
   const [itemName, setItemName] = useState('');
   const [date, setDate] = useState(todayAsInputDate());
+  const [time, setTime] = useState(todayAsInputTime());
   const [notes, setNotes] = useState('');
   const [amountError, setAmountError] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
@@ -70,12 +71,25 @@ export function QuickTransactionModal({
     description: string;
     quantity: string;
     transaction_date: string;
+    transaction_time?: string;
   }) => {
     const customer = customers?.find((c) => c.id === selectedCustomerId);
     const currentBal = customer ? parseFloat(customer.balance || '0') : 0;
     const delta = data.type === 'credit' ? parseFloat(data.amount) : -parseFloat(data.amount);
     const newBal = (currentBal + delta).toFixed(2);
     const tempId = `temp-txn-${Date.now()}`;
+
+    let offlineCreatedAt = new Date().toISOString();
+    if (data.transaction_date && data.transaction_time) {
+      try {
+        const parsed = new Date(`${data.transaction_date}T${data.transaction_time}:00`);
+        if (!isNaN(parsed.getTime())) {
+          offlineCreatedAt = parsed.toISOString();
+        }
+      } catch {
+        // fallback to now
+      }
+    }
 
     const tempTxn: Transaction = {
       id: tempId,
@@ -88,8 +102,8 @@ export function QuickTransactionModal({
       transaction_date: data.transaction_date,
       reversal_of_id: null,
       is_reversed: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: offlineCreatedAt,
+      updated_at: offlineCreatedAt,
     };
 
     await saveTransactionLocal(tempTxn);
@@ -142,6 +156,7 @@ export function QuickTransactionModal({
       description: string;
       quantity: string;
       transaction_date: string;
+      transaction_time?: string;
     }) => {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('OFFLINE_RECORD');
@@ -183,6 +198,7 @@ export function QuickTransactionModal({
     setItemName('');
     setNotes('');
     setAmountError('');
+    setTime(todayAsInputTime());
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -204,6 +220,7 @@ export function QuickTransactionModal({
       description: fullDesc,
       quantity: '',
       transaction_date: date,
+      transaction_time: time,
     });
   }
 
@@ -275,15 +292,26 @@ export function QuickTransactionModal({
           />
         </div>
 
-        {/* Date Input */}
-        <div>
-          <label className="block text-xs font-bold uppercase text-stone-600 mb-1">DATE</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="input text-xs"
-          />
+        {/* Date & Time Input */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold uppercase text-stone-600 mb-1">DATE</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="input text-xs"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase text-stone-600 mb-1">TIME</label>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="input text-xs font-mono"
+            />
+          </div>
         </div>
 
         {/* Submit button */}

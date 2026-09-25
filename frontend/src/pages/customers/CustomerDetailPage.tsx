@@ -8,7 +8,7 @@ import { useAuth } from '../../features/auth/AuthContext';
 import { LoadingState, ErrorState, EmptyState } from '../../components/ui/LedgerComponents';
 import { ConfirmDialog } from '../../components/ui/Modal';
 import { showToast } from '../../components/ui/Toast';
-import { formatCurrency, formatDate, getErrorMessage } from '../../utils/format';
+import { formatCurrency, formatDate, formatTime, getErrorMessage } from '../../utils/format';
 import { QuickTransactionModal } from '../../components/ui/QuickTransactionModal';
 import { WhatsAppReminderModal } from '../../components/ui/WhatsAppReminderModal';
 import { SendTransactionBillModal } from '../../components/ui/SendTransactionBillModal';
@@ -348,9 +348,15 @@ export function CustomerDetailPage() {
                               </span>
                             )}
                           </p>
-                          <p className="text-[11px] text-stone-500 font-mono mt-0.5">
-                            📅 {t.transaction_date}
-                          </p>
+                          <div className="text-[11px] text-stone-500 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                            <span>📅 {t.transaction_date}</span>
+                            {t.created_at && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-sans font-semibold text-stone-700 bg-parchment-200 px-1.5 py-0.5 rounded border border-parchment-300">
+                                <span>🕒</span>
+                                <span>{formatTime(t.created_at)}</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="text-right flex-shrink-0 flex items-center gap-2">
                           <div>
@@ -384,7 +390,7 @@ export function CustomerDetailPage() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b-2 border-parchment-300 text-stone-600 font-bold font-serif uppercase tracking-wider">
-                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Date & Time</th>
                       <th className="py-3 px-4">Details</th>
                       <th className="py-3 px-4">Type</th>
                       <th className="py-3 px-4 text-right">Amount</th>
@@ -401,7 +407,15 @@ export function CustomerDetailPage() {
                           onClick={() => navigate(`/transactions/${t.id}`)}
                           className="hover:bg-parchment-100 cursor-pointer transition-colors"
                         >
-                          <td className="py-3.5 px-4 text-stone-600 font-mono text-[11px]">{t.transaction_date}</td>
+                          <td className="py-3 px-4 text-stone-600 font-mono text-[11px]">
+                            <div className="font-bold text-stone-900">{t.transaction_date}</div>
+                            {t.created_at && (
+                              <div className="text-[10px] text-stone-500 font-sans flex items-center gap-1 mt-0.5">
+                                <span>🕒</span>
+                                <span>{formatTime(t.created_at)}</span>
+                              </div>
+                            )}
+                          </td>
                           <td className="py-3.5 px-4 font-bold text-stone-900 font-serif">{t.description || (isCredit ? 'Credit Entry' : 'Payment')}</td>
                           <td className={`py-3.5 px-4 font-bold ${isCredit ? 'text-rose-800' : 'text-emerald-800'}`}>
                             {isCredit ? 'Given' : 'Received'}

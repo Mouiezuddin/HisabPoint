@@ -93,7 +93,10 @@ export function generateKhataStatementHtml(
     const isCredit = t.type === 'credit';
     return `
       <tr>
-        <td class="font-mono" style="white-space: nowrap;">${escapeHtml(t.transaction_date)}</td>
+        <td class="font-mono" style="white-space: nowrap;">
+          ${escapeHtml(t.transaction_date)}
+          ${t.created_at ? `<div style="font-size: 8.5px; color: #64748b; font-family: sans-serif; font-weight: normal;">${new Date(t.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>` : ''}
+        </td>
         <td class="font-medium">${escapeHtml(t.description || (isCredit ? 'Credit Entry' : 'Payment Received'))}</td>
         <td class="text-right font-mono font-bold" style="color: ${isCredit ? '#b91c1c' : '#64748b'};">
           ${isCredit ? formatInr(t.amount) : '-'}

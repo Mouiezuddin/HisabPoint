@@ -5,7 +5,7 @@ import { customerService } from '../../services/customer.service';
 import { ledgerService } from '../../services/ledger.service';
 import { LoadingState } from '../../components/ui/LedgerComponents';
 import { showToast } from '../../components/ui/Toast';
-import { todayAsInputDate, getErrorMessage } from '../../utils/format';
+import { todayAsInputDate, todayAsInputTime, getErrorMessage } from '../../utils/format';
 
 type TxnType = 'credit' | 'payment';
 
@@ -18,6 +18,7 @@ export function AddTransactionPage() {
   const initialType: TxnType = location.state?.type ?? 'credit';
   const [txnType, setTxnType] = useState<TxnType>(initialType);
   const [date, setDate] = useState(todayAsInputDate());
+  const [time, setTime] = useState(todayAsInputTime());
   const [itemName, setItemName] = useState('');
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
@@ -30,7 +31,7 @@ export function AddTransactionPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: { type: TxnType; amount: string; description: string; quantity: string; transaction_date: string }) =>
+    mutationFn: (data: { type: TxnType; amount: string; description: string; quantity: string; transaction_date: string; transaction_time?: string }) =>
       ledgerService.createTransaction(id!, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['transactions', id] });
@@ -58,6 +59,7 @@ export function AddTransactionPage() {
       description: fullDesc,
       quantity: '',
       transaction_date: date,
+      transaction_time: time,
     });
   }
 
@@ -149,14 +151,25 @@ export function AddTransactionPage() {
             {amountError && <p className="text-[10px] text-rose-700 font-bold mt-0.5">{amountError}</p>}
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="input text-xs"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="input text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Time</label>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="input text-xs font-mono"
+              />
+            </div>
           </div>
 
           <div>

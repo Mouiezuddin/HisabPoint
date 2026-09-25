@@ -127,4 +127,5 @@ export interface CreateTransactionData {
   description?: string;
   quantity?: string;
   transaction_date: string;
+  transaction_time?: string;
 }

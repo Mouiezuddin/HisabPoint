@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ledgerService } from '../services/ledger.service';
-import { formatCurrency, formatDateFull } from '../utils/format';
+import { formatCurrency, formatDateFull, formatTime } from '../utils/format';
 import { LoadingState, ErrorState, EmptyState } from '../components/ui/LedgerComponents';
 
 export function ActivityPage() {
@@ -107,9 +107,15 @@ export function ActivityPage() {
                       <p className="text-xs text-stone-600 truncate mt-0.5">
                         {t.description || (isPayment ? 'Payment Received' : 'Credit Purchase')}
                       </p>
-                      <p className="text-[10px] text-stone-500 font-mono mt-0.5">
-                        📅 {t.transaction_date}
-                      </p>
+                      <div className="text-[10px] text-stone-500 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                        <span>📅 {t.transaction_date}</span>
+                        {t.created_at && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-sans font-semibold text-stone-700 bg-parchment-200 px-1.5 py-0.5 rounded border border-parchment-300">
+                            <span>🕒</span>
+                            <span>{formatTime(t.created_at)}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="text-right flex-shrink-0">
@@ -131,7 +137,7 @@ export function ActivityPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b-2 border-parchment-300 text-stone-600 font-bold font-serif uppercase tracking-wider">
-                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Date & Time</th>
                   <th className="py-3 px-4">Customer</th>
                   <th className="py-3 px-4">Description</th>
                   <th className="py-3 px-4">Type</th>
@@ -147,7 +153,15 @@ export function ActivityPage() {
                       onClick={() => navigate(`/customers/${t.customer}`)}
                       className="hover:bg-parchment-100 cursor-pointer transition-colors"
                     >
-                      <td className="py-3.5 px-4 text-stone-600 font-mono text-[11px]">{t.transaction_date}</td>
+                      <td className="py-3 px-4 text-stone-600 font-mono text-[11px]">
+                        <div className="font-bold text-stone-900">{t.transaction_date}</div>
+                        {t.created_at && (
+                          <div className="text-[10px] text-stone-500 font-sans flex items-center gap-1 mt-0.5">
+                            <span>🕒</span>
+                            <span>{formatTime(t.created_at)}</span>
+                          </div>
+                        )}
+                      </td>
                       <td className="py-3.5 px-4 font-bold text-stone-900 font-serif">{t.customer_name || 'Customer'}</td>
                       <td className="py-3.5 px-4 text-stone-800">{t.description || (isPayment ? 'Payment Received' : 'Credit Purchase')}</td>
                       <td className={`py-3.5 px-4 font-bold ${isPayment ? 'text-emerald-800' : 'text-rose-800'}`}>

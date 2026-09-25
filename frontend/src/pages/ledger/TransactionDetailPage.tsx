@@ -6,7 +6,7 @@ import { removeTransactionLocal } from '../../features/offline/indexedDb';
 import { LoadingState, ErrorState } from '../../components/ui/LedgerComponents';
 import { ConfirmDialog } from '../../components/ui/Modal';
 import { showToast } from '../../components/ui/Toast';
-import { formatCurrency, formatDateFull, getErrorMessage } from '../../utils/format';
+import { formatCurrency, formatDateFull, formatTime, getErrorMessage } from '../../utils/format';
 
 export function TransactionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -127,8 +127,9 @@ export function TransactionDetailPage() {
         <div className="pt-3 border-t border-parchment-300 space-y-2.5 text-xs">
           <Row label="Customer" value={txn.customer_name} />
           <Row label="Date" value={formatDateFull(txn.transaction_date)} />
+          {txn.created_at && <Row label="Time of Entry" value={formatTime(txn.created_at)} />}
           {txn.description && <Row label="Description" value={txn.description} />}
-          <Row label="Recorded At" value={new Date(txn.created_at).toLocaleString('en-IN')} />
+          <Row label="Full Timestamp" value={new Date(txn.created_at).toLocaleString('en-IN')} />
         </div>
       </div>
 

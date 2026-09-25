@@ -275,3 +275,28 @@ class TransactionDeletionTestCase(TestCase):
         self.assertFalse(Transaction.objects.filter(id=reversal.id).exists())
         self.assertEqual(calculate_balance(self.customer), Decimal("0.00"))
 
+    def test_create_transaction_with_custom_time(self):
+        from rest_framework.test import APIClient
+        from rest_framework import status
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+
+        res = client.post(
+            f"/api/customers/{self.customer.id}/transactions/",
+            {
+                "type": "credit",
+                "amount": "250.00",
+                "description": "Late Evening Item",
+                "transaction_date": str(self.today),
+                "transaction_time": "19:45",
+            },
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        txn_id = res.data["transaction"]["id"]
+        txn = Transaction.objects.get(id=txn_id)
+        from django.utils import timezone
+        local_created = timezone.localtime(txn.created_at)
+        self.assertEqual(local_created.hour, 19)
+        self.assertEqual(local_created.minute, 45)
+

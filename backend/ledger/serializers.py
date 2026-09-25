@@ -63,6 +63,7 @@ class TransactionCreateSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     quantity = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     transaction_date = serializers.DateField()
+    transaction_time = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
 
     def validate_amount(self, value):
         validate_positive_amount(value)

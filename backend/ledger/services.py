@@ -48,7 +48,16 @@ def calculate_balance(customer):
 
 
 @db_transaction.atomic
-def create_transaction(customer, transaction_type, amount, description, transaction_date, created_by, quantity=""):
+def create_transaction(
+    customer,
+    transaction_type,
+    amount,
+    description,
+    transaction_date,
+    created_by,
+    quantity="",
+    transaction_time=None,
+):
     """
     Create a validated transaction record.
     Raises ValueError for invalid input.
@@ -70,6 +79,27 @@ def create_transaction(customer, transaction_type, amount, description, transact
         transaction_date=transaction_date,
         created_by=created_by,
     )
+
+    if transaction_time:
+        import datetime
+        from django.utils import timezone
+        t_obj = None
+        if isinstance(transaction_time, str) and transaction_time.strip():
+            try:
+                parts = [int(p) for p in transaction_time.strip().split(":")[:3]]
+                t_obj = datetime.time(*parts)
+            except Exception:
+                t_obj = None
+        elif isinstance(transaction_time, datetime.time):
+            t_obj = transaction_time
+
+        if t_obj:
+            dt = datetime.datetime.combine(transaction_date, t_obj)
+            if timezone.is_naive(dt):
+                dt = timezone.make_aware(dt)
+            Transaction.objects.filter(id=txn.id).update(created_at=dt)
+            txn.refresh_from_db()
+
     return txn
 
 

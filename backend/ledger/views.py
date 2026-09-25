@@ -55,6 +55,7 @@ class CustomerTransactionListCreateView(generics.ListCreateAPIView):
                 quantity=serializer.validated_data.get("quantity", ""),
                 transaction_date=serializer.validated_data["transaction_date"],
                 created_by=request.user,
+                transaction_time=serializer.validated_data.get("transaction_time"),
             )
         except ValueError as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

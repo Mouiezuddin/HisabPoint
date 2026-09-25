@@ -50,6 +50,30 @@ export function todayAsInputDate(): string {
 }
 
 /**
+ * Get current time as HH:MM for time input fields.
+ */
+export function todayAsInputTime(): string {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+/**
+ * Format a timestamp or ISO string into friendly local time (e.g. "10:45 AM").
+ */
+export function formatTime(dateStrOrIso?: string): string {
+  if (!dateStrOrIso) return '';
+  const date = new Date(dateStrOrIso);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+/**
  * Return greeting based on current hour.
  */
 export function getGreeting(): string {
