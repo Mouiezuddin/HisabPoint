@@ -8,7 +8,7 @@
  *    bypass this cache completely to preserve data integrity and privacy.
  */
 
-const CACHE_VERSION = 'v1.3.0';
+const CACHE_VERSION = 'v1.4.0';
 const STATIC_CACHE = `hisabpoint-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `hisabpoint-runtime-${CACHE_VERSION}`;
 
@@ -29,14 +29,14 @@ const APP_SHELL_ASSETS = [
   '/logo-mark.webp'
 ];
 
-// Install: Pre-cache app shell
+// Install: Pre-cache app shell and immediately activate new version
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       return cache.addAll(APP_SHELL_ASSETS);
     })
   );
-  // Do not automatically call skipWaiting() here so we don't disrupt active transactions
+  self.skipWaiting();
 });
 
 // Activate: Clean up obsolete caches
