@@ -9,6 +9,7 @@ import { todayAsInputDate, formatCurrency, formatDate, formatDateFull, getErrorM
 import { showToast } from '../../components/ui/Toast';
 import { ResponsiveModal } from '../../components/ui/ResponsiveModal';
 import { PrintInvoiceView } from '../../components/billing/PrintInvoiceView';
+import { CustomCalendarPicker } from '../../components/ui/CustomCalendarPicker';
 import type { InvoiceItemInput, PaymentMode, DiscountType, Invoice } from '../../types/invoice';
 import type { CustomerListItem, Transaction } from '../../types';
 
@@ -651,88 +652,15 @@ export function CreateInvoicePage() {
 
           {billingPeriodEnabled && (
             <div className="space-y-4 pt-2 border-t border-parchment-200">
-              {/* Quick Days Selector Pills */}
-              <div>
-                <label className="block text-[11px] font-bold text-stone-600 uppercase font-serif mb-1.5">
-                  Select Days
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'today', label: '1 Day (Today)' },
-                    { id: '7days', label: 'Last 7 Days' },
-                    { id: '15days', label: 'Last 15 Days' },
-                    { id: '30days', label: 'Last 30 Days' },
-                    { id: 'month', label: 'This Month' },
-                    { id: 'custom', label: '🗓️ Custom Calendar' },
-                  ].map((preset) => {
-                    const active = billingPeriodPreset === preset.id;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleSelectPeriodPreset(preset.id as any)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                          active
-                            ? 'bg-forest-900 text-gold-300 border-forest-950 shadow-sm'
-                            : 'bg-parchment-100 hover:bg-parchment-200 text-stone-700 border-parchment-300'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Calendar Date Inputs */}
-              <div className="bg-parchment-100/70 p-3.5 rounded-xl border border-parchment-300 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                    <span>🗓️</span>
-                    <span>Billing Calendar</span>
-                  </span>
-                  <span className="text-[11px] font-mono font-bold text-forest-900 bg-forest-100 px-2.5 py-0.5 rounded border border-forest-200">
-                    {periodDaysCount} {periodDaysCount === 1 ? 'Day' : 'Days'} Selected
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">
-                      From Date (Calendar Start)
-                    </label>
-                    <input
-                      type="date"
-                      value={billingPeriodStart}
-                      max={billingPeriodEnd}
-                      onChange={(e) => {
-                        setBillingPeriodStart(e.target.value);
-                        setBillingPeriodPreset('custom');
-                      }}
-                      className="w-full text-xs font-mono font-medium p-2 rounded-lg border border-parchment-400 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-forest-700"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">
-                      To Date (Calendar End)
-                    </label>
-                    <input
-                      type="date"
-                      value={billingPeriodEnd}
-                      min={billingPeriodStart}
-                      onChange={(e) => {
-                        setBillingPeriodEnd(e.target.value);
-                        setBillingPeriodPreset('custom');
-                      }}
-                      className="w-full text-xs font-mono font-medium p-2 rounded-lg border border-parchment-400 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-forest-700"
-                    />
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-stone-600 font-mono">
-                  {formatDateFull(billingPeriodStart)} to {formatDateFull(billingPeriodEnd)} ({periodDaysCount} {periodDaysCount === 1 ? 'day' : 'days'})
-                </p>
-              </div>
+              {/* Custom Interactive Calendar Picker (Visual Month Grid, Days Stepper & Quick Opinion Presets) */}
+              <CustomCalendarPicker
+                startDate={billingPeriodStart}
+                endDate={billingPeriodEnd}
+                onChange={(start, end) => {
+                  setBillingPeriodStart(start);
+                  setBillingPeriodEnd(end);
+                }}
+              />
 
               {/* Customer Khata Entries in this Period */}
               {customerMode === 'existing' && selectedCustomerId && (

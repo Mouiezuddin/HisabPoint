@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ResponsiveModal } from '../ui/ResponsiveModal';
+import { CustomCalendarPicker } from '../ui/CustomCalendarPicker';
 import { formatCurrency, formatDate, formatDateFull, todayAsInputDate } from '../../utils/format';
 import type { Customer, Transaction } from '../../types';
 
@@ -112,88 +113,15 @@ export function GenerateBillPeriodModal({
           Select how many days of Khata to include in this bill, or choose custom dates from the calendar.
         </p>
 
-        {/* Period Preset Pills */}
-        <div>
-          <label className="block text-[11px] font-bold text-stone-600 uppercase font-serif mb-1.5">
-            Quick Days Selection
-          </label>
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { id: 'today', label: '1 Day (Today)' },
-              { id: '7days', label: 'Last 7 Days' },
-              { id: '15days', label: 'Last 15 Days' },
-              { id: '30days', label: 'Last 30 Days' },
-              { id: 'month', label: 'This Month' },
-              { id: 'custom', label: '🗓️ Custom Calendar' },
-            ].map((p) => {
-              const active = selectedPreset === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => handleSelectPreset(p.id as PeriodPreset)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                    active
-                      ? 'bg-forest-900 text-gold-300 border-forest-950 shadow-sm'
-                      : 'bg-parchment-100 hover:bg-parchment-200 text-stone-700 border-parchment-300'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Interactive Calendar Date Range Pickers */}
-        <div className="bg-parchment-100/80 p-3.5 rounded-xl border border-parchment-300 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-              <span>📅</span>
-              <span>Billing Date Range (Calendar)</span>
-            </span>
-            <span className="text-[11px] font-mono font-bold text-forest-900 bg-forest-100 px-2 py-0.5 rounded border border-forest-200">
-              {daysCount} {daysCount === 1 ? 'Day' : 'Days'} Selected
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">
-                From Date (Start)
-              </label>
-              <input
-                type="date"
-                value={fromDate}
-                max={toDate}
-                onChange={(e) => {
-                  setFromDate(e.target.value);
-                  setSelectedPreset('custom');
-                }}
-                className="w-full text-xs font-mono font-medium p-2 rounded-lg border border-parchment-400 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-forest-700"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">
-                To Date (End)
-              </label>
-              <input
-                type="date"
-                value={toDate}
-                min={fromDate}
-                onChange={(e) => {
-                  setToDate(e.target.value);
-                  setSelectedPreset('custom');
-                }}
-                className="w-full text-xs font-mono font-medium p-2 rounded-lg border border-parchment-400 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-forest-700"
-              />
-            </div>
-          </div>
-
-          <p className="text-[11px] text-stone-600 font-mono">
-            {formatDateFull(fromDate)} to {formatDateFull(toDate)} ({daysCount} {daysCount === 1 ? 'day' : 'days'})
-          </p>
-        </div>
+        {/* Custom Interactive Calendar Picker (Visual Month Grid, Days Stepper & Quick Opinion Presets) */}
+        <CustomCalendarPicker
+          startDate={fromDate}
+          endDate={toDate}
+          onChange={(start, end) => {
+            setFromDate(start);
+            setToDate(end);
+          }}
+        />
 
         {/* Matching Entries Summary */}
         <div className="space-y-2">
