@@ -501,17 +501,21 @@ export function LoginPage() {
               )}
             </div>
 
-            <div className="pt-6 mt-6 border-t border-[#e5dec8] text-center">
+            <div className="pt-6 mt-6 border-t border-[#e5dec8] text-center space-y-2">
               <p className="text-xs text-[#665e52] font-semibold">
                 New to HisabPoint?{' '}
                 <Link to="/register" className="text-[#194a32] font-black hover:underline">
                   Create Shop Account
                 </Link>
               </p>
-              <p className="text-[10px] text-stone-400 mt-2">
-                <Link to="/terms" className="hover:text-stone-700 hover:underline">Terms</Link>
-                {' • '}
-                <Link to="/privacy" className="hover:text-stone-700 hover:underline">Privacy Policy</Link>
+              <p className="text-[11px] text-[#786f62]">
+                <Link to="/terms" className="hover:text-[#194a32] hover:underline font-medium">
+                  Terms & Conditions
+                </Link>
+                {' '}&bull;{' '}
+                <Link to="/privacy" className="hover:text-[#194a32] hover:underline font-medium">
+                  Privacy Policy
+                </Link>
               </p>
             </div>
           </div>
