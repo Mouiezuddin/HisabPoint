@@ -296,6 +296,15 @@ export function InvoiceDetailPage() {
               <p className="text-xs">
                 <span className="font-bold text-stone-500">Date:</span> {formatDate(invoice.invoice_date)}
               </p>
+              {invoice.billing_period_start && invoice.billing_period_end && (
+                <p className="text-xs">
+                  <span className="font-bold text-stone-500">Bill Period:</span>{' '}
+                  <span className="font-bold text-forest-900 bg-forest-100 px-1.5 py-0.5 rounded border border-forest-200">
+                    {formatDate(invoice.billing_period_start)} – {formatDate(invoice.billing_period_end)}
+                    {invoice.billing_period_days ? ` (${invoice.billing_period_days} Days)` : ''}
+                  </span>
+                </p>
+              )}
               <p className="text-xs">
                 <span className="font-bold text-stone-500">Payment:</span>{' '}
                 <span className="font-bold capitalize">

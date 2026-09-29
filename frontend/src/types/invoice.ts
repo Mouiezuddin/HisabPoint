@@ -23,6 +23,9 @@ export interface Invoice {
   invoice_number: string;
   invoice_date: string;
   due_date: string | null;
+  billing_period_start?: string | null;
+  billing_period_end?: string | null;
+  billing_period_days?: number | null;
   payment_status: InvoiceStatus;
   payment_status_display?: string;
   payment_mode: PaymentMode;
@@ -50,6 +53,9 @@ export interface InvoiceListItem {
   customer_phone: string;
   invoice_number: string;
   invoice_date: string;
+  billing_period_start?: string | null;
+  billing_period_end?: string | null;
+  billing_period_days?: number | null;
   payment_status: InvoiceStatus;
   payment_status_display?: string;
   payment_mode: PaymentMode;
@@ -74,6 +80,8 @@ export interface InvoiceCreatePayload {
   customer_phone?: string;
   invoice_date: string;
   due_date?: string | null;
+  billing_period_start?: string | null;
+  billing_period_end?: string | null;
   payment_mode: PaymentMode;
   discount_type: DiscountType;
   discount_value: number;

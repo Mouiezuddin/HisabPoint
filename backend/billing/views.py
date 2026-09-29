@@ -106,6 +106,8 @@ def invoice_list_create_view(request):
             terms=data.get("terms", "Goods once sold will not be taken back."),
             items=data["items"],
             ledger_transaction=ledger_transaction,
+            billing_period_start=data.get("billing_period_start"),
+            billing_period_end=data.get("billing_period_end"),
         )
     except ValueError as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

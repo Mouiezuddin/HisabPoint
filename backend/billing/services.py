@@ -68,6 +68,8 @@ def create_invoice(
     terms="Goods once sold will not be taken back.",
     items=None,
     ledger_transaction=None,
+    billing_period_start=None,
+    billing_period_end=None,
 ):
     """
     Create an invoice with items, compute totals, and optionally book a ledger transaction.
@@ -194,6 +196,8 @@ def create_invoice(
         tax_amount=tax_amount,
         total_amount=total_amount,
         paid_amount=paid_amount,
+        billing_period_start=billing_period_start,
+        billing_period_end=billing_period_end,
         notes=notes,
         terms=terms,
     )

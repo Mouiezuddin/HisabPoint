@@ -12,6 +12,7 @@ import { formatCurrency, formatDate, formatTime, getErrorMessage } from '../../u
 import { QuickTransactionModal } from '../../components/ui/QuickTransactionModal';
 import { WhatsAppReminderModal } from '../../components/ui/WhatsAppReminderModal';
 import { SendTransactionBillModal } from '../../components/ui/SendTransactionBillModal';
+import { GenerateBillPeriodModal } from '../../components/billing/GenerateBillPeriodModal';
 import { UpiQrModal } from '../../components/ui/UpiQrModal';
 import { authService } from '../../services/auth.service';
 import {
@@ -35,6 +36,7 @@ export function CustomerDetailPage() {
   const [deletingTxn, setDeletingTxn] = useState<Transaction | null>(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showBillModal, setShowBillModal] = useState(false);
+  const [showBillPeriodModal, setShowBillPeriodModal] = useState(false);
   const [showUpiModal, setShowUpiModal] = useState(false);
 
   const { data: business } = useQuery({
@@ -229,10 +231,10 @@ export function CustomerDetailPage() {
               <span>💳 UPI QR</span>
             </button>
             <button
-              onClick={() => navigate(`/invoices/new?customer=${id}`)}
+              onClick={() => setShowBillPeriodModal(true)}
               className="flex-1 sm:flex-none bg-forest-800 hover:bg-forest-900 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
               id="btn-generate-bill-customer"
-              title="Generate a proper customer-facing itemized invoice / bill"
+              title="Generate a proper customer-facing itemized invoice / bill for selected days"
             >
               <span>🧾 Generate Bill</span>
             </button>
@@ -502,6 +504,24 @@ export function CustomerDetailPage() {
           transactions={transactions || []}
           shopName={user?.name || 'HisabPoint Ledger'}
           business={business}
+        />
+      )}
+
+      {/* Bill Period & Days Selector Modal */}
+      {showBillPeriodModal && (
+        <GenerateBillPeriodModal
+          isOpen={showBillPeriodModal}
+          onClose={() => setShowBillPeriodModal(false)}
+          customer={customer}
+          transactions={transactions || []}
+          onProceed={(fromDate, toDate, daysCount) => {
+            setShowBillPeriodModal(false);
+            navigate(`/invoices/new?customer=${id}&from=${fromDate}&to=${toDate}&days=${daysCount}`);
+          }}
+          onProceedBlank={() => {
+            setShowBillPeriodModal(false);
+            navigate(`/invoices/new?customer=${id}`);
+          }}
         />
       )}
 

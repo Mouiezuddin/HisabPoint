@@ -453,3 +453,31 @@ class HisabPointRequirementTests(BillingTestBase):
             "Two Hundred and Twenty Rupees and Fifty Paise Only"
         )
 
+    def test_billing_period_and_days_calculation(self):
+        """Test invoice creation with billing period and days calculation."""
+        from datetime import date, timedelta
+        start = date(2026, 9, 23)
+        end = date(2026, 9, 29)  # 7 days inclusive
+
+        invoice = create_invoice(
+            user=self.user,
+            customer=self.customer,
+            customer_name=self.customer.name,
+            invoice_date=self.today,
+            items=[{"name": "Rice 25kg", "quantity": 1, "unit": "bag", "unit_price": 1200}],
+            billing_period_start=start,
+            billing_period_end=end,
+        )
+
+        self.assertEqual(invoice.billing_period_start, start)
+        self.assertEqual(invoice.billing_period_end, end)
+        self.assertEqual(invoice.billing_period_days, 7)
+
+        # Check serialized output
+        from billing.serializers import InvoiceSerializer
+        serializer = InvoiceSerializer(invoice)
+        self.assertEqual(serializer.data["billing_period_days"], 7)
+        self.assertEqual(serializer.data["billing_period_start"], "2026-09-23")
+        self.assertEqual(serializer.data["billing_period_end"], "2026-09-29")
+
+

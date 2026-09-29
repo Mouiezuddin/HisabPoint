@@ -149,6 +149,15 @@ export function PrintInvoiceView({ invoice, business }: PrintInvoiceViewProps) {
             <span className="font-semibold text-stone-600">Invoice Date:</span>
             <span className="font-semibold text-stone-900">{formatDate(invoice.invoice_date)}</span>
           </div>
+          {invoice.billing_period_start && invoice.billing_period_end && (
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="font-semibold text-stone-600">Bill Period:</span>
+              <span className="font-semibold text-stone-900">
+                {formatDate(invoice.billing_period_start)} – {formatDate(invoice.billing_period_end)}
+                {invoice.billing_period_days ? ` (${invoice.billing_period_days} Days)` : ''}
+              </span>
+            </div>
+          )}
           {invoice.due_date && (
             <div className="flex justify-between items-center text-[11px]">
               <span className="font-semibold text-stone-600">Due Date:</span>

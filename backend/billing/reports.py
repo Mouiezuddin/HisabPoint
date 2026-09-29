@@ -263,6 +263,12 @@ def generate_invoice_pdf(invoice, business_profile=None) -> bytes:
         particulars_data.append(
             [Paragraph("<b>Due Date:</b>", style_meta_text), Paragraph(str(invoice.due_date), style_meta_text)]
         )
+    if invoice.billing_period_start and invoice.billing_period_end:
+        days_str = f"({invoice.billing_period_days} Days)" if invoice.billing_period_days else ""
+        period_text = f"{invoice.billing_period_start} to {invoice.billing_period_end} {days_str}".strip()
+        particulars_data.append(
+            [Paragraph("<b>Bill Period:</b>", style_meta_text), Paragraph(period_text, style_meta_text)]
+        )
     particulars_data.append(
         [Paragraph("<b>Payment Mode:</b>", style_meta_text), Paragraph(payment_mode_label, style_meta_text)]
     )

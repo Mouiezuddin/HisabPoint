@@ -57,6 +57,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         fields = [
             "id", "customer_id", "customer_name", "customer_phone", "customer_address",
             "invoice_number", "invoice_date", "due_date",
+            "billing_period_start", "billing_period_end", "billing_period_days",
             "payment_status", "payment_status_display", "payment_mode",
             "subtotal", "discount_type", "discount_value",
             "discount_amount", "tax_rate", "tax_amount",
@@ -83,6 +84,8 @@ class InvoiceCreateSerializer(serializers.Serializer):
     customer_phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
     invoice_date = serializers.DateField()
     due_date = serializers.DateField(required=False, allow_null=True)
+    billing_period_start = serializers.DateField(required=False, allow_null=True)
+    billing_period_end = serializers.DateField(required=False, allow_null=True)
     payment_mode = serializers.ChoiceField(
         choices=PaymentMode.choices,
         default=PaymentMode.CASH,
@@ -128,6 +131,7 @@ class InvoiceListSerializer(serializers.ModelSerializer):
         fields = [
             "id", "customer_name", "customer_phone",
             "invoice_number", "invoice_date",
+            "billing_period_start", "billing_period_end", "billing_period_days",
             "payment_status", "payment_status_display", "payment_mode",
             "total_amount", "paid_amount", "balance_due",
             "created_at",

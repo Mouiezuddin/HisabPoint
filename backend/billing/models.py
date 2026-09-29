@@ -49,6 +49,10 @@ class Invoice(models.Model):
     invoice_date = models.DateField()
     due_date = models.DateField(null=True, blank=True)
 
+    # Optional billing period for multi-day bills
+    billing_period_start = models.DateField(null=True, blank=True)
+    billing_period_end = models.DateField(null=True, blank=True)
+
     payment_status = models.CharField(
         max_length=20,
         choices=InvoiceStatus.choices,
@@ -124,6 +128,12 @@ class Invoice(models.Model):
     @property
     def balance_due(self):
         return self.total_amount - self.paid_amount
+
+    @property
+    def billing_period_days(self):
+        if self.billing_period_start and self.billing_period_end:
+            return (self.billing_period_end - self.billing_period_start).days + 1
+        return None
 
 
 class InvoiceItem(models.Model):
