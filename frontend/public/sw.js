@@ -8,7 +8,7 @@
  *    bypass this cache completely to preserve data integrity and privacy.
  */
 
-const CACHE_VERSION = 'v1.8.0';
+const CACHE_VERSION = 'v1.9.0';
 const STATIC_CACHE = `hisabpoint-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `hisabpoint-runtime-${CACHE_VERSION}`;
 
