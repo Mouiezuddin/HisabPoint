@@ -501,31 +501,18 @@ export function LoginPage() {
               )}
             </div>
 
-            <div className="pt-5 mt-5 border-t border-[#e5dec8] text-center space-y-3">
+            <div className="pt-6 mt-6 border-t border-[#e5dec8] text-center">
               <p className="text-xs text-[#665e52] font-semibold">
                 New to HisabPoint?{' '}
                 <Link to="/register" className="text-[#194a32] font-black hover:underline">
                   Create Shop Account
                 </Link>
               </p>
-
-              {/* Legal & DPDP Compliance Links */}
-              <div className="pt-2 border-t border-[#e5dec8]/80 text-[11px] text-[#786f62]">
-                <p>
-                  By signing in, you agree to our{' '}
-                  <Link to="/terms" className="font-bold text-[#194a32] hover:underline">
-                    Terms & Conditions
-                  </Link>{' '}
-                  and acknowledge our{' '}
-                  <Link to="/privacy" className="font-bold text-[#194a32] hover:underline">
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
-                <p className="text-[10px] text-stone-500 mt-1">
-                  Protected under India&apos;s Digital Personal Data Protection (DPDP) Act, 2023.
-                </p>
-              </div>
+              <p className="text-[10px] text-stone-400 mt-2">
+                <Link to="/terms" className="hover:text-stone-700 hover:underline">Terms</Link>
+                {' • '}
+                <Link to="/privacy" className="hover:text-stone-700 hover:underline">Privacy Policy</Link>
+              </p>
             </div>
           </div>
 
@@ -540,19 +527,19 @@ export function LoginPage() {
             </div>
 
             {/* Middle Feature Visual Box */}
-            <div className="my-auto space-y-3 py-2">
-              <div className="bg-[#ffffff] p-4 rounded-2xl border border-[#e5dec8] shadow-sm space-y-2.5">
+            <div className="my-auto space-y-4 py-2">
+              <div className="bg-[#ffffff] p-5 rounded-2xl border border-[#e5dec8] shadow-sm space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#194a32]/10 text-[#194a32] flex items-center justify-center text-xl font-bold">
+                  <div className="w-12 h-12 rounded-xl bg-[#194a32]/10 text-[#194a32] flex items-center justify-center text-2xl font-bold">
                     🏪
                   </div>
                   <div>
-                    <h3 className="font-bold text-xs sm:text-sm font-serif text-[#1c1815]">Kirana & General Store Khata</h3>
-                    <p className="text-[10px] sm:text-[11px] text-[#786f62] font-medium">100% Safe, Secure & Auto-Synced</p>
+                    <h3 className="font-bold text-sm font-serif text-[#1c1815]">Kirana & General Store Khata</h3>
+                    <p className="text-[11px] text-[#786f62] font-medium">100% Safe, Secure & Auto-Synced</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="grid grid-cols-2 gap-2 text-center text-xs pt-1">
                   <div className="bg-[#f7f4ea] p-2 rounded-xl border border-[#e5dec8]">
                     <p className="text-[10px] text-[#786f62] uppercase font-bold">Total Dues Managed</p>
                     <p className="font-black text-[#b91c1c] text-sm">₹84,500</p>
@@ -564,60 +551,21 @@ export function LoginPage() {
                 </div>
               </div>
 
-              {/* DPDP Act 2023 Trust & Transparency Box */}
-              <div className="bg-[#f0ebe0] p-3 rounded-xl border border-[#ded5be] space-y-1 text-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-bold text-[#194a32] font-serif">
-                    <span>🛡️</span>
-                    <span>DPDP Act 2023 Protected</span>
-                  </div>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-300">
-                    Sovereign Data
-                  </span>
-                </div>
-                <p className="text-[10px] text-stone-600 leading-snug">
-                  Your customer contacts and credit balances are 100% private. We never share data with advertisers.
-                </p>
-                <div className="pt-0.5 flex items-center gap-3 text-[10px]">
-                  <Link to="/privacy" className="font-bold text-[#194a32] hover:underline">
-                    Privacy Notice (हिन्दी/Eng) →
-                  </Link>
-                  <Link to="/terms" className="font-bold text-[#194a32] hover:underline">
-                    Terms & DPA →
-                  </Link>
-                </div>
-              </div>
-
               {/* Shopkeeper Review Quote */}
-              <div className="bg-[#194a32] text-white p-3 rounded-2xl shadow-md space-y-0.5 text-xs">
-                <p className="font-bold font-serif text-[#e8e2d2] text-[11px]">"Ab koi hisab miss nahi hota. Customer balances are always clear!"</p>
+              <div className="bg-[#194a32] text-white p-4 rounded-2xl shadow-md space-y-1 text-xs">
+                <p className="font-bold font-serif text-[#e8e2d2]">"Ab koi hisab miss nahi hota. Customer balances are always clear!"</p>
                 <p className="text-[10px] text-emerald-200 text-right">— Imran Shaikh, Shop Owner</p>
               </div>
             </div>
 
             {/* Bottom Trust Icons */}
-            <div className="border-t border-[#e5dec8] pt-3 flex items-center justify-between text-[11px] font-bold text-[#5c5449]">
+            <div className="border-t border-[#e5dec8] pt-4 flex items-center justify-between text-[11px] font-bold text-[#5c5449]">
               <span className="flex items-center gap-1">🛡️ 100% Data Safe</span>
               <span className="flex items-center gap-1">📱 Mobile & Laptop</span>
               <span className="flex items-center gap-1">⚡ Instant Sync</span>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Subtle Bottom Footer Links below the book */}
-      <div className="w-full max-w-5xl mx-auto mt-4 text-center text-xs text-amber-200/90 flex flex-wrap items-center justify-center gap-3 sm:gap-6">
-        <span>© 2026 HisabPoint Technologies</span>
-        <span>•</span>
-        <Link to="/privacy" className="hover:text-gold-300 underline font-semibold transition-colors">
-          Privacy Policy & Data Notice
-        </Link>
-        <span>•</span>
-        <Link to="/terms" className="hover:text-gold-300 underline font-semibold transition-colors">
-          Terms of Service & DPA
-        </Link>
-        <span>•</span>
-        <span className="text-[11px] opacity-80">Compliant with India DPDP Act 2023</span>
       </div>
     </div>
   );
