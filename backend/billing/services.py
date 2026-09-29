@@ -17,25 +17,31 @@ from ledger.models import TransactionType
 from ledger.services import create_transaction, reverse_transaction
 
 
-def get_next_invoice_number(user):
+def get_next_invoice_number(user, prefix="RP-"):
     """
     Derive the next sequential invoice number for a user.
-    Format: INV-0001, INV-0002, ...
+    Format: RP-000001, RP-000002, ... (preserves INV- series if already in use).
     """
-    last_invoice = (
-        Invoice.objects
-        .filter(user=user)
-        .aggregate(max_num=Max("invoice_number"))
-    )
-    last_num = last_invoice["max_num"]
-    if last_num and last_num.startswith("INV-"):
-        try:
-            seq = int(last_num.split("-")[1]) + 1
-        except (ValueError, IndexError):
-            seq = 1
-    else:
-        seq = 1
-    return f"INV-{seq:04d}"
+    invoices = Invoice.objects.filter(user=user).values_list("invoice_number", flat=True)
+    max_seq = 0
+    detected_prefix = prefix
+    for num in invoices:
+        if not num:
+            continue
+        for p in ("RP-", "INV-"):
+            if num.startswith(p):
+                try:
+                    seq = int(num[len(p):])
+                    if seq > max_seq:
+                        max_seq = seq
+                        detected_prefix = p
+                except (ValueError, IndexError):
+                    pass
+
+    next_seq = max_seq + 1
+    if detected_prefix == "INV-":
+        return f"INV-{next_seq:04d}"
+    return f"RP-{next_seq:06d}"
 
 
 def _quantize(value):
@@ -61,34 +67,15 @@ def create_invoice(
     notes="",
     terms="Goods once sold will not be taken back.",
     items=None,
+    ledger_transaction=None,
 ):
     """
     Create an invoice with items, compute totals, and optionally book a ledger transaction.
-
-    Args:
-        user: Authenticated user (shopkeeper).
-        customer: Optional Customer model instance (for linked customers).
-        customer_name: Display name for walk-in or snapshot.
-        customer_phone: Display phone for walk-in or snapshot.
-        invoice_number: Explicit number or auto-generated.
-        invoice_date: Date of the invoice.
-        payment_status: One of InvoiceStatus choices.
-        payment_mode: One of PaymentMode choices.
-        discount_type: 'flat' or 'percentage'.
-        discount_value: Discount input value.
-        tax_rate: GST/tax rate as percentage (e.g., 18.00).
-        paid_amount: Amount already paid.
-        notes: Additional notes.
-        terms: Terms and conditions text.
-        items: List of dicts with keys: name, quantity, unit, unit_price.
-
-    Returns:
-        The created Invoice instance.
     """
     if not items or len(items) == 0:
         raise ValueError("At least one item is required.")
 
-    if invoice_number is None:
+    if not invoice_number:
         invoice_number = get_next_invoice_number(user)
 
     # Use customer info as snapshot if customer is linked
@@ -103,20 +90,48 @@ def create_invoice(
     subtotal = Decimal("0.00")
     item_objects = []
     for idx, item_data in enumerate(items):
-        qty = _quantize(item_data.get("quantity", 1))
-        price = _quantize(item_data.get("unit_price", 0))
-        if qty <= 0:
-            raise ValueError(f"Item '{item_data.get('name', '')}' quantity must be greater than 0.")
-        if price <= 0:
-            raise ValueError(f"Item '{item_data.get('name', '')}' price must be greater than ₹0.")
+        name = (item_data.get("name") or "").strip()
+        if not name:
+            raise ValueError(f"Item #{idx + 1} name is required.")
 
-        line_amount = _quantize(qty * price)
+        qty_raw = item_data.get("quantity")
+        price_raw = item_data.get("unit_price")
+        amount_raw = item_data.get("amount")
+
+        # If both qty and unit_price are provided:
+        if qty_raw is not None and price_raw is not None and str(qty_raw) != "" and str(price_raw) != "":
+            qty = _quantize(qty_raw)
+            price = _quantize(price_raw)
+            if qty <= 0:
+                raise ValueError(f"Item '{name}' quantity must be greater than 0.")
+            if price <= 0:
+                raise ValueError(f"Item '{name}' price must be greater than ₹0.")
+            line_amount = _quantize(qty * price)
+            unit = item_data.get("unit") or "pcs"
+        elif amount_raw is not None and str(amount_raw) != "":
+            # Backward compatibility for legacy transactions without inventing fake qty/unit_price
+            line_amount = _quantize(amount_raw)
+            if line_amount <= 0:
+                raise ValueError(f"Item '{name}' amount must be greater than ₹0.")
+            qty = None
+            price = None
+            unit = item_data.get("unit") or ""
+        elif price_raw is not None and str(price_raw) != "":
+            line_amount = _quantize(price_raw)
+            if line_amount <= 0:
+                raise ValueError(f"Item '{name}' amount must be greater than ₹0.")
+            qty = None
+            price = None
+            unit = item_data.get("unit") or ""
+        else:
+            raise ValueError(f"Item '{name}' must have unit price or amount.")
+
         subtotal += line_amount
 
         item_objects.append({
-            "name": item_data.get("name", "Item"),
+            "name": name,
             "quantity": qty,
-            "unit": item_data.get("unit", "pcs"),
+            "unit": unit,
             "unit_price": price,
             "amount": line_amount,
             "order": idx,
@@ -152,12 +167,13 @@ def create_invoice(
     if paid_amount > total_amount:
         raise ValueError("Paid amount cannot exceed total amount.")
 
-    # Auto-determine payment status based on paid amount
+    # Auto-determine payment status based on actual payment data
     if paid_amount >= total_amount:
         payment_status = InvoiceStatus.PAID
     elif paid_amount > 0:
         payment_status = InvoiceStatus.PARTIALLY_PAID
-    # else keep the provided status (default UNPAID)
+    else:
+        payment_status = InvoiceStatus.UNPAID
 
     # Create the invoice
     invoice = Invoice.objects.create(
@@ -188,9 +204,12 @@ def create_invoice(
         for item_data in item_objects
     ])
 
-    # If invoice is credit/unpaid for a linked customer, create ledger transaction
+    # If invoice is linked to an existing transaction, or if credit/unpaid for a linked customer, book ledger transaction
     balance_due = total_amount - paid_amount
-    if customer and balance_due > 0 and payment_status != InvoiceStatus.PAID:
+    if ledger_transaction:
+        invoice.ledger_transaction = ledger_transaction
+        invoice.save(update_fields=["ledger_transaction"])
+    elif customer and balance_due > 0 and payment_status != InvoiceStatus.PAID:
         item_count = len(item_objects)
         description = f"Bill #{invoice_number} ({item_count} item{'s' if item_count != 1 else ''})"
 

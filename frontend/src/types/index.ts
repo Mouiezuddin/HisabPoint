@@ -44,6 +44,7 @@ export interface CustomerListItem {
   id: string;
   name: string;
   phone: string;
+  address?: string;
   status: CustomerStatus;
   balance: string;
   balance_status: BalanceStatus;

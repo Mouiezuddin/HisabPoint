@@ -4,6 +4,9 @@ from rest_framework import serializers
 from .models import Invoice, InvoiceItem, InvoiceStatus, PaymentMode, DiscountType
 
 
+from .utils import amount_to_words_inr
+
+
 class InvoiceItemSerializer(serializers.ModelSerializer):
     """Read serializer for invoice line items."""
     class Meta:
@@ -18,25 +21,34 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
 class InvoiceItemCreateSerializer(serializers.Serializer):
     """Write serializer for creating invoice items (nested in InvoiceCreateSerializer)."""
     name = serializers.CharField(max_length=300)
-    quantity = serializers.DecimalField(max_digits=10, decimal_places=2, default=Decimal("1.00"))
-    unit = serializers.CharField(max_length=20, required=False, default="pcs")
-    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2)
+    quantity = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, default=Decimal("1.00"))
+    unit = serializers.CharField(max_length=20, required=False, allow_blank=True, default="pcs")
+    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
 
-    def validate_quantity(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Quantity must be greater than 0.")
-        return value
+    def validate(self, attrs):
+        qty = attrs.get("quantity")
+        price = attrs.get("unit_price")
+        amt = attrs.get("amount")
 
-    def validate_unit_price(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Price must be greater than ₹0.")
-        return value
+        if qty is not None and qty <= 0:
+            raise serializers.ValidationError({"quantity": "Quantity must be greater than 0."})
+        if price is not None and price <= 0:
+            raise serializers.ValidationError({"unit_price": "Price must be greater than ₹0."})
+        if amt is not None and amt <= 0:
+            raise serializers.ValidationError({"amount": "Amount must be greater than ₹0."})
+
+        if price is None and amt is None:
+            raise serializers.ValidationError("Either unit price or amount must be provided.")
+        return attrs
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
     """Read serializer for invoice with nested items."""
     items = InvoiceItemSerializer(many=True, read_only=True)
     balance_due = serializers.SerializerMethodField()
+    amount_in_words = serializers.SerializerMethodField()
+    payment_status_display = serializers.CharField(source="get_payment_status_display", read_only=True)
     customer_id = serializers.UUIDField(source="customer.id", read_only=True, allow_null=True)
     customer_address = serializers.CharField(source="customer.address", read_only=True, default="")
 
@@ -45,10 +57,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
         fields = [
             "id", "customer_id", "customer_name", "customer_phone", "customer_address",
             "invoice_number", "invoice_date", "due_date",
-            "payment_status", "payment_mode",
+            "payment_status", "payment_status_display", "payment_mode",
             "subtotal", "discount_type", "discount_value",
             "discount_amount", "tax_rate", "tax_amount",
-            "total_amount", "paid_amount", "balance_due",
+            "total_amount", "paid_amount", "balance_due", "amount_in_words",
             "notes", "terms",
             "ledger_transaction_id",
             "items",
@@ -59,10 +71,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def get_balance_due(self, obj):
         return f"{obj.balance_due:.2f}"
 
+    def get_amount_in_words(self, obj):
+        return amount_to_words_inr(obj.total_amount)
+
 
 class InvoiceCreateSerializer(serializers.Serializer):
     """Write serializer for creating a new invoice."""
     customer_id = serializers.UUIDField(required=False, allow_null=True)
+    transaction_id = serializers.UUIDField(required=False, allow_null=True)
     customer_name = serializers.CharField(max_length=200)
     customer_phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
     invoice_date = serializers.DateField()
@@ -105,13 +121,14 @@ class InvoiceCreateSerializer(serializers.Serializer):
 class InvoiceListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for invoice list views (no nested items)."""
     balance_due = serializers.SerializerMethodField()
+    payment_status_display = serializers.CharField(source="get_payment_status_display", read_only=True)
 
     class Meta:
         model = Invoice
         fields = [
             "id", "customer_name", "customer_phone",
             "invoice_number", "invoice_date",
-            "payment_status", "payment_mode",
+            "payment_status", "payment_status_display", "payment_mode",
             "total_amount", "paid_amount", "balance_due",
             "created_at",
         ]

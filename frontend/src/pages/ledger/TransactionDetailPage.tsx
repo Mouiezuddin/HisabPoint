@@ -133,6 +133,27 @@ export function TransactionDetailPage() {
         </div>
       </div>
 
+      {/* Generate Bill action */}
+      {isCredit && !txn.is_reversed && (
+        <div className="bg-forest-50/60 rounded-2xl p-5 border-2 border-forest-200 shadow-md space-y-3">
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-forest-950 flex items-center gap-1.5 font-serif">
+              <span>🧾 Generate Proper Bill / Invoice</span>
+            </p>
+            <p className="text-xs font-medium text-stone-600">
+              Create a formal customer-facing bill or A4 PDF for this credit entry without altering Khata statements.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate(`/invoices/new?customer=${txn.customer}&transaction=${txn.id}`)}
+            className="w-full btn-forest text-white py-3 text-xs font-black rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+            id="btn-generate-bill-from-txn"
+          >
+            <span>🧾 Generate Bill for this Entry</span>
+          </button>
+        </div>
+      )}
+
       {/* Reverse action */}
       {canReverse && (
         <div className="bg-parchment-50 rounded-2xl p-5 border-2 border-parchment-300 shadow-md space-y-3">

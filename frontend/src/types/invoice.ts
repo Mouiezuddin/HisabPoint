@@ -7,9 +7,9 @@ export type DiscountType = 'flat' | 'percentage';
 export interface InvoiceItem {
   id: string;
   name: string;
-  quantity: string;
+  quantity: string | null;
   unit: string;
-  unit_price: string;
+  unit_price: string | null;
   amount: string;
   order: number;
 }
@@ -24,6 +24,7 @@ export interface Invoice {
   invoice_date: string;
   due_date: string | null;
   payment_status: InvoiceStatus;
+  payment_status_display?: string;
   payment_mode: PaymentMode;
   subtotal: string;
   discount_type: DiscountType;
@@ -34,6 +35,7 @@ export interface Invoice {
   total_amount: string;
   paid_amount: string;
   balance_due: string;
+  amount_in_words?: string;
   notes: string;
   terms: string;
   ledger_transaction_id: string | null;
@@ -49,6 +51,7 @@ export interface InvoiceListItem {
   invoice_number: string;
   invoice_date: string;
   payment_status: InvoiceStatus;
+  payment_status_display?: string;
   payment_mode: PaymentMode;
   total_amount: string;
   paid_amount: string;
@@ -58,13 +61,15 @@ export interface InvoiceListItem {
 
 export interface InvoiceItemInput {
   name: string;
-  quantity: number;
-  unit: string;
-  unit_price: number;
+  quantity?: number | null;
+  unit?: string;
+  unit_price?: number | null;
+  amount?: number;
 }
 
 export interface InvoiceCreatePayload {
   customer_id?: string | null;
+  transaction_id?: string | null;
   customer_name: string;
   customer_phone?: string;
   invoice_date: string;

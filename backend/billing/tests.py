@@ -224,9 +224,9 @@ class InvoiceNumberSequenceTests(BillingTestBase):
     """Test sequential invoice number generation."""
 
     def test_first_invoice_number(self):
-        """First invoice should be INV-0001."""
+        """First invoice should be RP-000001."""
         num = get_next_invoice_number(self.user)
-        self.assertEqual(num, "INV-0001")
+        self.assertEqual(num, "RP-000001")
 
     def test_sequential_numbers(self):
         """Invoice numbers should increment sequentially."""
@@ -238,7 +238,7 @@ class InvoiceNumberSequenceTests(BillingTestBase):
             items=self.sample_items,
         )
         num = get_next_invoice_number(self.user)
-        self.assertEqual(num, "INV-0002")
+        self.assertEqual(num, "RP-000002")
 
     def test_numbers_isolated_per_user(self):
         """Each user gets their own invoice number sequence."""
@@ -256,6 +256,200 @@ class InvoiceNumberSequenceTests(BillingTestBase):
             items=self.sample_items,
         )
 
-        # Other user's first invoice should still be INV-0001
+        # Other user's first invoice should still be RP-000001
         num = get_next_invoice_number(other_user)
-        self.assertEqual(num, "INV-0001")
+        self.assertEqual(num, "RP-000001")
+
+
+class HisabPointRequirementTests(BillingTestBase):
+    """
+    Direct verification of User Specification Cases 1 through 7.
+    """
+
+    def test_case_1_single_item_unpaid_due(self):
+        """
+        Case 1:
+        1 item, ₹220, Paid ₹0
+        Expected: Grand Total ₹220, Paid ₹0, Due ₹220, Status DUE (unpaid)
+        """
+        invoice = create_invoice(
+            user=self.user,
+            customer=self.customer,
+            customer_name=self.customer.name,
+            invoice_date=self.today,
+            paid_amount=Decimal("0.00"),
+            items=[{"name": "Rice", "quantity": 2, "unit": "kg", "unit_price": 110}],
+        )
+
+        self.assertEqual(invoice.total_amount, Decimal("220.00"))
+        self.assertEqual(invoice.paid_amount, Decimal("0.00"))
+        self.assertEqual(invoice.balance_due, Decimal("220.00"))
+        self.assertEqual(invoice.payment_status, InvoiceStatus.UNPAID)
+
+    def test_case_2_fully_paid(self):
+        """
+        Case 2:
+        ₹1,000, Paid ₹1,000
+        Expected: Due ₹0, Status PAID
+        """
+        invoice = create_invoice(
+            user=self.user,
+            customer=self.customer,
+            customer_name=self.customer.name,
+            invoice_date=self.today,
+            paid_amount=Decimal("1000.00"),
+            items=[{"name": "Bulk Grains", "quantity": 10, "unit": "kg", "unit_price": 100}],
+        )
+
+        self.assertEqual(invoice.total_amount, Decimal("1000.00"))
+        self.assertEqual(invoice.paid_amount, Decimal("1000.00"))
+        self.assertEqual(invoice.balance_due, Decimal("0.00"))
+        self.assertEqual(invoice.payment_status, InvoiceStatus.PAID)
+
+    def test_case_3_partially_paid(self):
+        """
+        Case 3:
+        ₹1,000, Paid ₹400
+        Expected: Due ₹600, Status PARTIALLY PAID
+        """
+        invoice = create_invoice(
+            user=self.user,
+            customer=self.customer,
+            customer_name=self.customer.name,
+            invoice_date=self.today,
+            paid_amount=Decimal("400.00"),
+            items=[{"name": "Bulk Grains", "quantity": 10, "unit": "kg", "unit_price": 100}],
+        )
+
+        self.assertEqual(invoice.total_amount, Decimal("1000.00"))
+        self.assertEqual(invoice.paid_amount, Decimal("400.00"))
+        self.assertEqual(invoice.balance_due, Decimal("600.00"))
+        self.assertEqual(invoice.payment_status, InvoiceStatus.PARTIALLY_PAID)
+
+    def test_case_4_multiple_items_subtotal(self):
+        """
+        Case 4:
+        Multiple items:
+        Rice: 2 × ₹110 = ₹220
+        Sugar: 1 × ₹50 = ₹50
+        Expected Subtotal: ₹270
+        """
+        invoice = create_invoice(
+            user=self.user,
+            customer=self.customer,
+            customer_name=self.customer.name,
+            invoice_date=self.today,
+            items=[
+                {"name": "Rice", "quantity": 2, "unit": "kg", "unit_price": 110},
+                {"name": "Sugar", "quantity": 1, "unit": "kg", "unit_price": 50},
+            ],
+        )
+
+        self.assertEqual(invoice.items.count(), 2)
+        self.assertEqual(invoice.subtotal, Decimal("270.00"))
+        self.assertEqual(invoice.total_amount, Decimal("270.00"))
+
+    def test_case_5_legacy_transaction_backward_compatibility(self):
+        """
+        Case 5:
+        Existing old transaction:
+        Description: 'rice 2kg', Amount: ₹220
+        The system must NOT invent Quantity = 2, Unit Price = ₹110.
+        It must safely preserve Description and Amount.
+        """
+        invoice = create_invoice(
+            user=self.user,
+            customer=self.customer,
+            customer_name=self.customer.name,
+            invoice_date=self.today,
+            items=[
+                {"name": "rice 2kg", "amount": Decimal("220.00")},
+            ],
+        )
+
+        item = invoice.items.first()
+        self.assertEqual(item.name, "rice 2kg")
+        self.assertEqual(item.amount, Decimal("220.00"))
+        # Quantity and unit_price must NOT be invented
+        self.assertIsNone(item.quantity)
+        self.assertIsNone(item.unit_price)
+        self.assertEqual(invoice.total_amount, Decimal("220.00"))
+
+    def test_case_6_unauthorized_invoice_access(self):
+        """
+        Case 6:
+        Unauthorized invoice access.
+        User A must not access User B's invoice or PDF.
+        """
+        from rest_framework.test import APIClient
+
+        user_b = User.objects.create_user(
+            email="userb@test.com",
+            password="testpass123",
+            name="User B Shop",
+        )
+        invoice_b = create_invoice(
+            user=user_b,
+            customer_name="User B Customer",
+            invoice_date=self.today,
+            items=[{"name": "Item B", "quantity": 1, "unit_price": 500}],
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)  # Logged in as User A
+
+        # User A tries to GET User B's invoice detail
+        res_detail = client.get(f"/api/invoices/{invoice_b.id}/")
+        self.assertEqual(res_detail.status_code, 404)
+
+        # User A tries to GET User B's invoice PDF
+        res_pdf = client.get(f"/api/invoices/{invoice_b.id}/pdf/")
+        self.assertEqual(res_pdf.status_code, 404)
+
+    def test_case_7_pdf_generation_validity(self):
+        """
+        Case 7:
+        Invoice PDF:
+        Verify PDF opens (starts with %PDF-), text is selectable, totals are correct.
+        """
+        from billing.reports import generate_invoice_pdf
+        from rest_framework.test import APIClient
+
+        invoice = create_invoice(
+            user=self.user,
+            customer=self.customer,
+            customer_name=self.customer.name,
+            invoice_date=self.today,
+            items=[
+                {"name": "Basmati Rice 5kg", "quantity": 2, "unit": "bag", "unit_price": 250},
+                {"name": "Sugar 1kg", "quantity": 3, "unit": "kg", "unit_price": 45},
+            ],
+            paid_amount=Decimal("200.00"),
+        )
+
+        pdf_bytes = generate_invoice_pdf(invoice)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF-"))
+        self.assertGreater(len(pdf_bytes), 1000)
+
+        # Test API endpoint
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+        response = client.get(f"/api/invoices/{invoice.id}/pdf/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("attachment; filename=", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF-"))
+
+    def test_amount_in_words_inr(self):
+        """Verify Indian numbering currency words conversion."""
+        from billing.utils import amount_to_words_inr
+
+        self.assertEqual(amount_to_words_inr(Decimal("220.00")), "Two Hundred and Twenty Rupees Only")
+        self.assertEqual(amount_to_words_inr(Decimal("1000.00")), "One Thousand Rupees Only")
+        self.assertEqual(amount_to_words_inr(Decimal("270.00")), "Two Hundred and Seventy Rupees Only")
+        self.assertEqual(amount_to_words_inr(Decimal("100000.00")), "One Lakh Rupees Only")
+        self.assertEqual(
+            amount_to_words_inr(Decimal("220.50")),
+            "Two Hundred and Twenty Rupees and Fifty Paise Only"
+        )
+

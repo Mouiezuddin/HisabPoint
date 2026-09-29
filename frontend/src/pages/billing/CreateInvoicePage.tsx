@@ -1,12 +1,15 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoiceService } from '../../services/invoice.service';
 import { customerService } from '../../services/customer.service';
+import { ledgerService } from '../../services/ledger.service';
+import { authService } from '../../services/auth.service';
 import { todayAsInputDate, formatCurrency, getErrorMessage } from '../../utils/format';
 import { showToast } from '../../components/ui/Toast';
-import { LoadingState } from '../../components/ui/LedgerComponents';
-import type { InvoiceItemInput, PaymentMode, DiscountType } from '../../types/invoice';
+import { ResponsiveModal } from '../../components/ui/ResponsiveModal';
+import { PrintInvoiceView } from '../../components/billing/PrintInvoiceView';
+import type { InvoiceItemInput, PaymentMode, DiscountType, Invoice } from '../../types/invoice';
 import type { CustomerListItem } from '../../types';
 
 interface ItemRow extends InvoiceItemInput {
@@ -24,6 +27,7 @@ export function CreateInvoicePage() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const preselectedCustomerId = searchParams.get('customer') || '';
+  const preselectedTxnId = searchParams.get('transaction') || '';
 
   // Customer selection state
   const [customerMode, setCustomerMode] = useState<'existing' | 'walkin'>(
@@ -52,6 +56,9 @@ export function CreateInvoicePage() {
   // Notes
   const [notes, setNotes] = useState('');
 
+  // Preview modal state
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
   // Fetch customers for selection
   const { data: customers } = useQuery({
     queryKey: ['customers'],
@@ -64,6 +71,45 @@ export function CreateInvoicePage() {
     queryKey: ['next-invoice-number'],
     queryFn: invoiceService.getNextInvoiceNumber,
   });
+
+  // Fetch business profile for preview
+  const { data: business } = useQuery({
+    queryKey: ['business-profile'],
+    queryFn: authService.getBusinessProfile,
+  });
+
+  // Fetch preselected transaction if generating bill from an existing ledger entry
+  const { data: prefilledTxn } = useQuery({
+    queryKey: ['transaction', preselectedTxnId],
+    queryFn: () => ledgerService.getTransaction(preselectedTxnId),
+    enabled: !!preselectedTxnId,
+  });
+
+  const [hasPrefilledTxn, setHasPrefilledTxn] = useState(false);
+  useEffect(() => {
+    if (prefilledTxn && !hasPrefilledTxn) {
+      if (prefilledTxn.customer) {
+        setSelectedCustomerId(prefilledTxn.customer);
+        setCustomerMode('existing');
+      }
+      if (prefilledTxn.transaction_date) {
+        setInvoiceDate(prefilledTxn.transaction_date);
+      }
+      setPaymentMode('credit');
+      const amt = parseFloat(prefilledTxn.amount) || 0;
+      setItems([
+        {
+          _key: crypto.randomUUID(),
+          name: prefilledTxn.description || 'Credit Entry',
+          quantity: null,
+          unit: '',
+          unit_price: null,
+          amount: amt,
+        },
+      ]);
+      setHasPrefilledTxn(true);
+    }
+  }, [prefilledTxn, hasPrefilledTxn]);
 
   // Find selected customer
   const selectedCustomer = useMemo(() => {
@@ -84,9 +130,16 @@ export function CreateInvoicePage() {
   // Calculations
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => {
-      const qty = item.quantity || 0;
-      const price = item.unit_price || 0;
-      return sum + qty * price;
+      const q = typeof item.quantity === 'number' ? item.quantity : parseFloat(String(item.quantity || ''));
+      const p = typeof item.unit_price === 'number' ? item.unit_price : parseFloat(String(item.unit_price || ''));
+      if (!isNaN(q) && !isNaN(p) && q > 0 && p > 0) {
+        return sum + q * p;
+      }
+      const a = typeof item.amount === 'number' ? item.amount : parseFloat(String(item.amount || ''));
+      if (!isNaN(a) && a > 0) {
+        return sum + a;
+      }
+      return sum;
     }, 0);
   }, [items]);
 
@@ -111,11 +164,18 @@ export function CreateInvoicePage() {
   const balanceDue = Math.max(totalAmount - paidNum, 0);
 
   // Item operations
-  const updateItem = useCallback((key: string, field: keyof InvoiceItemInput, value: string | number) => {
+  const updateItem = useCallback((key: string, field: keyof ItemRow, value: any) => {
     setItems((prev) =>
-      prev.map((item) =>
-        item._key === key ? { ...item, [field]: value } : item
-      )
+      prev.map((item) => {
+        if (item._key !== key) return item;
+        const updated = { ...item, [field]: value };
+        const q = typeof updated.quantity === 'number' ? updated.quantity : parseFloat(String(updated.quantity || ''));
+        const p = typeof updated.unit_price === 'number' ? updated.unit_price : parseFloat(String(updated.unit_price || ''));
+        if (!isNaN(q) && !isNaN(p) && q > 0 && p > 0) {
+          updated.amount = q * p;
+        }
+        return updated;
+      })
     );
   }, []);
 
@@ -147,13 +207,21 @@ export function CreateInvoicePage() {
     onError: (err) => showToast(getErrorMessage(err), 'error'),
   });
 
+  const getValidItems = () => {
+    return items.filter((i) => {
+      const nameValid = Boolean(i.name && i.name.trim());
+      const hasQtyPrice = Boolean(i.quantity && i.unit_price && i.quantity > 0 && i.unit_price > 0);
+      const hasAmt = Boolean(i.amount && i.amount > 0);
+      return nameValid && (hasQtyPrice || hasAmt);
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation
-    const validItems = items.filter((i) => i.name.trim() && i.quantity > 0 && i.unit_price > 0);
+    const validItems = getValidItems();
     if (validItems.length === 0) {
-      showToast('Add at least one item with name, quantity, and price.', 'error');
+      showToast('Add at least one item with a name and price or amount.', 'error');
       return;
     }
 
@@ -169,6 +237,7 @@ export function CreateInvoicePage() {
 
     createMutation.mutate({
       customer_id: customerMode === 'existing' && selectedCustomerId ? selectedCustomerId : null,
+      transaction_id: preselectedTxnId || null,
       customer_name: customerName,
       customer_phone:
         customerMode === 'existing'
@@ -181,14 +250,73 @@ export function CreateInvoicePage() {
       tax_rate: enableTax ? parseFloat(taxRate) || 0 : 0,
       paid_amount: paidNum,
       notes,
-      items: validItems.map(({ name, quantity, unit, unit_price }) => ({
-        name,
-        quantity,
-        unit,
-        unit_price,
+      items: validItems.map((item) => ({
+        name: item.name.trim(),
+        quantity: item.quantity && item.quantity > 0 ? item.quantity : null,
+        unit: item.quantity && item.quantity > 0 ? (item.unit || 'pcs') : '',
+        unit_price: item.unit_price && item.unit_price > 0 ? item.unit_price : null,
+        amount: item.amount || (item.quantity && item.unit_price ? item.quantity * item.unit_price : undefined),
       })),
     });
   };
+
+  // Build draft invoice object for preview
+  const draftInvoice: Invoice = useMemo(() => {
+    const validItems = getValidItems();
+    const customerName =
+      customerMode === 'existing'
+        ? selectedCustomer?.name || 'Customer'
+        : walkinName.trim() || 'Walk-in Customer';
+
+    const customerPhone =
+      customerMode === 'existing'
+        ? selectedCustomer?.phone || ''
+        : walkinPhone;
+
+    const status = paidNum >= totalAmount ? 'paid' : paidNum > 0 ? 'partially_paid' : 'unpaid';
+
+    return {
+      id: 'draft',
+      customer_id: selectedCustomerId || null,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      customer_address: selectedCustomer?.address || '',
+      invoice_number: nextNumber || 'RP-000001',
+      invoice_date: invoiceDate,
+      due_date: null,
+      payment_status: status,
+      payment_mode: paymentMode,
+      subtotal: subtotal.toFixed(2),
+      discount_type: discountType,
+      discount_value: discountValue || '0',
+      discount_amount: discountAmount.toFixed(2),
+      tax_rate: enableTax ? (taxRate || '0') : '0',
+      tax_amount: taxAmount.toFixed(2),
+      total_amount: totalAmount.toFixed(2),
+      paid_amount: paidNum.toFixed(2),
+      balance_due: balanceDue.toFixed(2),
+      notes,
+      terms: 'Goods once sold will not be taken back.',
+      ledger_transaction_id: preselectedTxnId || null,
+      items: validItems.map((item, idx) => ({
+        id: item._key,
+        name: item.name || 'Item',
+        quantity: item.quantity ? String(item.quantity) : null,
+        unit: item.quantity ? (item.unit || 'pcs') : '',
+        unit_price: item.unit_price ? String(item.unit_price) : null,
+        amount: String(item.amount || (item.quantity && item.unit_price ? item.quantity * item.unit_price : '0')),
+        order: idx,
+      })),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }, [
+    items, customerMode, selectedCustomer, walkinName, walkinPhone,
+    paidNum, totalAmount, nextNumber, invoiceDate, paymentMode,
+    subtotal, discountType, discountValue, discountAmount,
+    enableTax, taxRate, taxAmount, balanceDue, notes, preselectedTxnId,
+    selectedCustomerId,
+  ]);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -204,6 +332,11 @@ export function CreateInvoicePage() {
           <h1 className="text-2xl sm:text-3xl font-black font-serif text-stone-900 tracking-tight">
             Create New Bill
           </h1>
+          {preselectedTxnId && (
+            <p className="text-xs text-forest-800 font-semibold mt-0.5">
+              🔗 Linked to credit entry ({formatCurrency(prefilledTxn?.amount || '0')})
+            </p>
+          )}
         </div>
         {nextNumber && (
           <span className="text-xs font-mono font-bold text-forest-900 bg-forest-100 px-3 py-1.5 rounded-lg border border-forest-200">
@@ -371,87 +504,119 @@ export function CreateInvoicePage() {
 
         {/* Line Items */}
         <div className="bg-parchment-50 rounded-2xl p-5 border-2 border-parchment-300 shadow-md space-y-4">
-          <h2 className="text-sm font-bold text-stone-600 uppercase tracking-wider font-serif">Items</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-stone-600 uppercase tracking-wider font-serif">Items</h2>
+            <span className="text-[11px] text-stone-500">
+              Enter Qty × Rate or directly enter Amount for simple items
+            </span>
+          </div>
 
           <div className="space-y-3">
-            {items.map((item, idx) => (
-              <div
-                key={item._key}
-                className="bg-white rounded-xl border border-parchment-200 p-3 sm:p-4 space-y-3 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-stone-400 font-mono">#{idx + 1}</span>
-                  {items.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item._key)}
-                      className="text-xs text-rose-500 hover:text-rose-700 font-bold"
-                    >
-                      ✕ Remove
-                    </button>
-                  )}
-                </div>
+            {items.map((item, idx) => {
+              const hasQtyRate = Boolean(item.quantity && item.unit_price && item.quantity > 0 && item.unit_price > 0);
+              const computedLineTotal = hasQtyRate ? (item.quantity! * item.unit_price!).toFixed(2) : (item.amount || 0).toFixed(2);
 
-                {/* Item name */}
-                <input
-                  type="text"
-                  placeholder="Item name / description"
-                  value={item.name}
-                  onChange={(e) => updateItem(item._key, 'name', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-parchment-200 text-sm font-medium focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-200"
-                />
+              return (
+                <div
+                  key={item._key}
+                  className="bg-white rounded-xl border border-parchment-200 p-3 sm:p-4 space-y-3 shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-stone-400 font-mono">#{idx + 1}</span>
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item._key)}
+                        className="text-xs text-rose-500 hover:text-rose-700 font-bold"
+                      >
+                        ✕ Remove
+                      </button>
+                    )}
+                  </div>
 
-                {/* Qty, Unit, Price, Total */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Qty</label>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={item.quantity || ''}
-                      onChange={(e) => updateItem(item._key, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-2 rounded-lg border border-parchment-200 text-sm font-bold text-center focus:outline-none focus:border-gold-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Unit</label>
-                    <select
-                      value={item.unit}
-                      onChange={(e) => updateItem(item._key, 'unit', e.target.value)}
-                      className="w-full px-1 py-2 rounded-lg border border-parchment-200 text-sm font-medium focus:outline-none focus:border-gold-500"
-                    >
-                      {UNITS.map((u) => (
-                        <option key={u} value={u}>{u}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Rate (₹)</label>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={item.unit_price || ''}
-                      onChange={(e) => updateItem(item._key, 'unit_price', parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-2 rounded-lg border border-parchment-200 text-sm font-bold text-right focus:outline-none focus:border-gold-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Amount</label>
-                    <div className="w-full px-2 py-2 rounded-lg bg-parchment-100 border border-parchment-200 text-sm font-black text-right text-stone-900 font-tabular">
-                      ₹{((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}
+                  {/* Item name */}
+                  <input
+                    type="text"
+                    placeholder="Item name / description"
+                    value={item.name}
+                    onChange={(e) => updateItem(item._key, 'name', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-parchment-200 text-sm font-medium focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-200"
+                    required
+                  />
+
+                  {/* Qty, Unit, Price, Total */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Qty (opt)</label>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="-"
+                        value={item.quantity !== null && item.quantity !== undefined ? item.quantity : ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                          updateItem(item._key, 'quantity', val);
+                        }}
+                        className="w-full px-2 py-2 rounded-lg border border-parchment-200 text-sm font-bold text-center focus:outline-none focus:border-gold-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Unit</label>
+                      <select
+                        value={item.unit || ''}
+                        onChange={(e) => updateItem(item._key, 'unit', e.target.value)}
+                        className="w-full px-1 py-2 rounded-lg border border-parchment-200 text-sm font-medium focus:outline-none focus:border-gold-500"
+                      >
+                        <option value="">-</option>
+                        {UNITS.map((u) => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Rate (₹)</label>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="-"
+                        value={item.unit_price !== null && item.unit_price !== undefined ? item.unit_price : ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                          updateItem(item._key, 'unit_price', val);
+                        }}
+                        className="w-full px-2 py-2 rounded-lg border border-parchment-200 text-sm font-bold text-right focus:outline-none focus:border-gold-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Amount (₹)</label>
+                      {hasQtyRate ? (
+                        <div className="w-full px-2 py-2 rounded-lg bg-parchment-100 border border-parchment-200 text-sm font-black text-right text-stone-900 font-tabular">
+                          ₹{computedLineTotal}
+                        </div>
+                      ) : (
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={item.amount !== null && item.amount !== undefined ? item.amount : ''}
+                          onChange={(e) => updateItem(item._key, 'amount', parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-2 rounded-lg border border-parchment-200 text-sm font-black text-right focus:outline-none focus:border-gold-500 font-tabular text-stone-900"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <button
             type="button"
             onClick={addItem}
-            className="w-full py-2.5 rounded-xl border-2 border-dashed border-parchment-400 text-sm font-bold text-stone-600 hover:bg-parchment-100 hover:border-gold-400 transition-all"
+            className="w-full py-2.5 rounded-xl border-2 border-dashed border-parchment-400 text-sm font-bold text-stone-600 hover:bg-parchment-100 hover:border-gold-400 transition-all cursor-pointer"
             id="btn-add-item"
           >
             + Add Item
@@ -547,7 +712,7 @@ export function CreateInvoicePage() {
           {/* Divider */}
           <div className="border-t-2 border-parchment-300 pt-3">
             <div className="flex justify-between text-lg">
-              <span className="font-black font-serif text-stone-900">Total</span>
+              <span className="font-black font-serif text-stone-900">Grand Total</span>
               <span className="font-black font-serif text-stone-900 font-tabular">
                 {formatCurrency(totalAmount)}
               </span>
@@ -582,7 +747,7 @@ export function CreateInvoicePage() {
           {paymentMode === 'credit' && selectedCustomerId && balanceDue > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 font-medium">
               <span className="font-bold">📒 Udhar Note:</span> {formatCurrency(balanceDue)} will be automatically
-              added to <strong>{selectedCustomer?.name}</strong>'s ledger as a credit entry.
+              reflected in <strong>{selectedCustomer?.name}</strong>'s ledger balance.
             </div>
           )}
         </div>
@@ -602,9 +767,19 @@ export function CreateInvoicePage() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="sm:w-auto px-6 py-3.5 rounded-2xl border-2 border-forest-800 bg-forest-50 text-forest-900 font-black text-sm hover:bg-forest-100 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            id="btn-preview-invoice"
+          >
+            <span>👁️</span>
+            <span>Preview Bill</span>
+          </button>
+
+          <button
             type="submit"
             disabled={createMutation.isPending}
-            className="flex-1 btn-forest text-white font-black py-3.5 px-6 rounded-2xl shadow-skeuo-forest transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-1 btn-forest text-white font-black py-3.5 px-6 rounded-2xl shadow-skeuo-forest transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             id="btn-save-invoice"
           >
             {createMutation.isPending ? (
@@ -621,12 +796,46 @@ export function CreateInvoicePage() {
           <button
             type="button"
             onClick={() => navigate('/invoices')}
-            className="sm:w-auto px-6 py-3.5 rounded-2xl border-2 border-parchment-300 text-stone-700 font-bold text-sm hover:bg-parchment-100 transition-all"
+            className="sm:w-auto px-6 py-3.5 rounded-2xl border-2 border-parchment-300 text-stone-700 font-bold text-sm hover:bg-parchment-100 transition-all cursor-pointer"
           >
             Cancel
           </button>
         </div>
       </form>
+
+      {/* Bill Preview Modal before Save */}
+      <ResponsiveModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        title="Official Bill Preview"
+        maxWidthClass="max-w-3xl"
+      >
+        <div className="space-y-4">
+          <div className="bg-stone-100 p-2 sm:p-4 rounded-xl border border-stone-300 overflow-x-auto max-h-[70vh]">
+            <PrintInvoiceView invoice={draftInvoice} business={business} />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(false)}
+              className="px-5 py-2.5 rounded-xl border border-stone-300 font-bold text-xs text-stone-700 hover:bg-stone-100 cursor-pointer"
+            >
+              Back to Edit
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                setShowPreviewModal(false);
+                handleSubmit(e);
+              }}
+              disabled={createMutation.isPending}
+              className="btn-forest text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-md cursor-pointer"
+            >
+              Looks Good, Save Bill
+            </button>
+          </div>
+        </div>
+      </ResponsiveModal>
     </div>
   );
 }

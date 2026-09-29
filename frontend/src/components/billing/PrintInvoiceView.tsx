@@ -212,13 +212,13 @@ export function PrintInvoiceView({ invoice, business }: PrintInvoiceViewProps) {
                 -
               </td>
               <td className="py-2 px-2 border-r border-stone-800 text-center font-bold font-mono">
-                {item.quantity}
+                {item.quantity != null ? item.quantity : '-'}
               </td>
               <td className="py-2 px-2 border-r border-stone-800 text-center text-stone-600 text-[11px]">
-                {item.unit || 'pcs'}
+                {item.quantity != null ? (item.unit || 'pcs') : '-'}
               </td>
               <td className="py-2 px-2 border-r border-stone-800 text-right font-mono">
-                {formatCurrency(item.unit_price)}
+                {item.unit_price != null ? formatCurrency(item.unit_price) : '-'}
               </td>
               <td className="py-2 px-3 border-stone-800 text-right font-bold font-mono text-stone-950">
                 {formatCurrency(item.amount)}

@@ -40,4 +40,19 @@ export const invoiceService = {
     const res = await api.get('/invoices/next-number/');
     return res.data.next_number;
   },
+
+  async downloadInvoicePdf(id: string, invoiceNumber?: string): Promise<void> {
+    const res = await api.get(`/invoices/${id}/pdf/`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Invoice_${invoiceNumber || id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 };

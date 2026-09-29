@@ -35,7 +35,7 @@ function buildWhatsAppText(
     total_amount: string;
     paid_amount: string;
     balance_due: string;
-    items: Array<{ name: string; quantity: string; amount: string }>;
+    items: Array<{ name: string; quantity: string | null; amount: string }>;
     invoice_date: string;
   },
   shopName: string
@@ -47,7 +47,8 @@ function buildWhatsAppText(
   msg += `Customer: *${invoice.customer_name}*\n\n`;
   msg += `*Items:*\n`;
   invoice.items.forEach((item, i) => {
-    msg += `${i + 1}. ${item.name} × ${item.quantity} = ₹${item.amount}\n`;
+    const qtyText = item.quantity ? ` × ${item.quantity}` : '';
+    msg += `${i + 1}. ${item.name}${qtyText} = ₹${item.amount}\n`;
   });
   msg += `\n━━━━━━━━━━━━━━━\n`;
   msg += `*Total: ₹${invoice.total_amount}*\n`;
@@ -100,6 +101,22 @@ export function InvoiceDetailPage() {
     },
     onError: (err) => showToast(getErrorMessage(err), 'error'),
   });
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    try {
+      setDownloadingPdf(true);
+      showToast('Generating official PDF bill…', 'info');
+      await invoiceService.downloadInvoicePdf(invoice.id, invoice.invoice_number);
+      showToast('PDF downloaded successfully!', 'success');
+    } catch (err) {
+      showToast(getErrorMessage(err) || 'Failed to download PDF bill.', 'error');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handlePrint = () => {
     if (!invoice) return;
@@ -171,17 +188,32 @@ export function InvoiceDetailPage() {
       {/* Action Buttons Toolbar */}
       <div className="flex flex-wrap items-center gap-2.5 no-print">
         <button
+          onClick={handleDownloadPdf}
+          disabled={downloadingPdf}
+          className="btn-forest text-white font-bold py-2.5 px-5 rounded-xl shadow-md flex items-center gap-2 text-sm transition-transform active:scale-95 disabled:opacity-60 cursor-pointer"
+          id="btn-download-pdf-invoice"
+          title="Download official server-generated vector PDF document"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>{downloadingPdf ? 'Generating PDF…' : 'Download PDF'}</span>
+        </button>
+
+        <button
           onClick={handlePrint}
-          className="btn-forest text-white font-bold py-2.5 px-5 rounded-xl shadow-md flex items-center gap-2 text-sm transition-transform active:scale-95"
+          className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 font-bold py-2.5 px-4 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-2 text-sm transition-transform active:scale-95 cursor-pointer"
           id="btn-print-invoice"
-          title="Save as authentic A4 PDF or print to paper"
+          title="Open print view or save as paper receipt"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="6 9 6 2 18 2 18 9" />
             <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
             <rect x="6" y="14" width="12" height="8" />
           </svg>
-          <span>Save as PDF / Print Bill</span>
+          <span>Print</span>
         </button>
 
         <button
@@ -296,9 +328,9 @@ export function InvoiceDetailPage() {
                   <tr key={item.id}>
                     <td className="py-2.5 text-stone-400 font-mono">{idx + 1}</td>
                     <td className="py-2.5 font-bold text-stone-900 font-serif">{item.name}</td>
-                    <td className="py-2.5 text-center font-tabular font-mono">{item.quantity}</td>
-                    <td className="py-2.5 text-center text-stone-500">{item.unit}</td>
-                    <td className="py-2.5 text-right font-tabular font-mono">{formatCurrency(item.unit_price)}</td>
+                    <td className="py-2.5 text-center font-tabular font-mono">{item.quantity != null ? item.quantity : '-'}</td>
+                    <td className="py-2.5 text-center text-stone-500">{item.quantity != null ? (item.unit || 'pcs') : '-'}</td>
+                    <td className="py-2.5 text-right font-tabular font-mono">{item.unit_price != null ? formatCurrency(item.unit_price) : '-'}</td>
                     <td className="py-2.5 text-right font-black font-tabular font-mono">{formatCurrency(item.amount)}</td>
                   </tr>
                 ))}

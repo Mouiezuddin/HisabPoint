@@ -135,12 +135,12 @@ class InvoiceItem(models.Model):
     )
     name = models.CharField(max_length=300)
     quantity = models.DecimalField(
-        max_digits=10, decimal_places=2, default=Decimal("1.00"),
+        max_digits=10, decimal_places=2, null=True, blank=True, default=Decimal("1.00"),
         validators=[MinValueValidator(Decimal("0.01"))],
     )
     unit = models.CharField(max_length=20, blank=True, default="pcs")
     unit_price = models.DecimalField(
-        max_digits=12, decimal_places=2,
+        max_digits=12, decimal_places=2, null=True, blank=True,
         validators=[MinValueValidator(Decimal("0.01"))],
     )
     amount = models.DecimalField(

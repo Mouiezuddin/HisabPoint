@@ -94,7 +94,7 @@ export function SendTransactionBillModal({
       year: 'numeric',
     });
 
-    let msg = `🧾 *KHATA BILL & STATEMENT*\n`;
+    let msg = `📋 *CUSTOMER KHATA STATEMENT*\n`;
     msg += `🏪 *${displayShopName}*\n`;
     if (business?.phone) msg += `📞 Contact: ${business.phone}\n`;
     if (business?.address) msg += `📍 ${business.address}\n`;
@@ -155,14 +155,14 @@ export function SendTransactionBillModal({
 
   function handleCopyText() {
     navigator.clipboard.writeText(customMessage);
-    showToast('Transaction bill copied to clipboard!', 'success');
+    showToast('Customer Khata Statement copied to clipboard!', 'success');
   }
 
   async function handleNativeShare() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Khata Bill - ${customer.name}`,
+          title: `Khata Statement - ${customer.name}`,
           text: customMessage,
         });
         showToast('Shared successfully!', 'success');
@@ -185,7 +185,7 @@ export function SendTransactionBillModal({
       <ResponsiveModal
         isOpen={isOpen}
         onClose={onClose}
-        title="Send Transaction History as Bill"
+        title="Customer Khata Statement"
         maxWidthClass="max-w-2xl"
       >
         <div className="space-y-4">
@@ -216,7 +216,7 @@ export function SendTransactionBillModal({
                   : 'text-stone-700 hover:text-stone-900'
               }`}
             >
-              <span>💬 Send via WhatsApp</span>
+              <span>💬 Send Statement via WhatsApp</span>
             </button>
             <button
               onClick={() => setActiveTab('print')}
@@ -226,7 +226,7 @@ export function SendTransactionBillModal({
                   : 'text-stone-700 hover:text-stone-900'
               }`}
             >
-              <span>🖨️ Printable Khata Bill (PDF)</span>
+              <span>🖨️ Printable Khata Statement (PDF)</span>
             </button>
           </div>
 
@@ -264,7 +264,7 @@ export function SendTransactionBillModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-stone-700 font-serif">
-                  WhatsApp Bill Preview (Editable)
+                  WhatsApp Statement Preview (Editable)
                 </label>
                 {isEditing && (
                   <button
@@ -352,7 +352,7 @@ export function SendTransactionBillModal({
                     {business?.gstin && `| GSTIN: ${business.gstin}`}
                   </p>
                   <p className="mt-2 text-xs font-black uppercase tracking-widest text-stone-800 bg-stone-100 inline-block px-3 py-0.5 rounded border border-stone-200">
-                    KHATA ACCOUNT STATEMENT & BILL
+                    CUSTOMER KHATA STATEMENT
                   </p>
                 </div>
 
@@ -452,7 +452,7 @@ export function SendTransactionBillModal({
               {business?.gstin && `| GSTIN: ${business.gstin}`}
             </p>
             <h2 className="mt-3 text-sm font-black tracking-widest uppercase text-stone-800">
-              CUSTOMER KHATA STATEMENT & BILL
+              CUSTOMER KHATA STATEMENT
             </h2>
           </div>
 

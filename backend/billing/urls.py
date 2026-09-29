@@ -4,11 +4,13 @@ from .views import (
     invoice_detail_view,
     invoice_cancel_view,
     invoice_next_number_view,
+    invoice_pdf_view,
 )
 
 urlpatterns = [
     path("", invoice_list_create_view, name="invoice-list-create"),
     path("next-number/", invoice_next_number_view, name="invoice-next-number"),
     path("<uuid:pk>/", invoice_detail_view, name="invoice-detail"),
+    path("<uuid:pk>/pdf/", invoice_pdf_view, name="invoice-pdf"),
     path("<uuid:pk>/cancel/", invoice_cancel_view, name="invoice-cancel"),
 ]

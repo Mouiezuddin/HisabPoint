@@ -217,10 +217,10 @@ export function CustomerDetailPage() {
             <button
               onClick={() => setShowBillModal(true)}
               className="flex-1 sm:flex-none bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
-              id="btn-send-history-bill"
-              title="Send Transaction History as Bill via WhatsApp or Print PDF"
+              id="btn-customer-statement"
+              title="View or share Customer Khata Statement via WhatsApp or Print"
             >
-              <span>🧾 Send Bill (WhatsApp)</span>
+              <span>📋 Khata Statement</span>
             </button>
             <button
               onClick={() => setShowUpiModal(true)}
@@ -230,10 +230,11 @@ export function CustomerDetailPage() {
             </button>
             <button
               onClick={() => navigate(`/invoices/new?customer=${id}`)}
-              className="flex-1 sm:flex-none bg-forest-800 hover:bg-forest-900 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95"
-              id="btn-new-bill-customer"
+              className="flex-1 sm:flex-none bg-forest-800 hover:bg-forest-900 text-white text-xs font-black px-3.5 py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
+              id="btn-generate-bill-customer"
+              title="Generate a proper customer-facing itemized invoice / bill"
             >
-              <span>📋 + New Bill</span>
+              <span>🧾 Generate Bill</span>
             </button>
             <button
               onClick={() => navigate(`/customers/${id}/edit`)}
@@ -281,10 +282,10 @@ export function CustomerDetailPage() {
             <button
               onClick={() => setShowBillModal(true)}
               className="bg-parchment-200 hover:bg-parchment-300 text-stone-800 text-xs font-bold px-2.5 py-1 rounded-xl border border-parchment-300 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
-              title="Share or Print this transaction history as a Bill"
-              id="btn-share-history-bill"
+              title="Share or Print this transaction history as a Khata Statement"
+              id="btn-share-history-statement"
             >
-              <span>🧾 Share Bill</span>
+              <span>📋 Statement</span>
             </button>
           </div>
 
@@ -367,17 +368,33 @@ export function CustomerDetailPage() {
                               {isCredit ? 'Given' : 'Received'}
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletingTxn(t);
-                            }}
-                            className="p-2 text-stone-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors ml-1"
-                            title="Delete transaction permanently"
-                          >
-                            <span className="text-xs">🗑️</span>
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {isCredit && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/invoices/new?customer=${customer.id}&transaction=${t.id}`);
+                                }}
+                                className="px-2 py-1 text-forest-900 bg-forest-50 hover:bg-forest-100 rounded-lg transition-colors text-[11px] font-bold border border-forest-200 flex items-center gap-0.5"
+                                title="Generate Bill for this credit entry"
+                              >
+                                <span>🧾</span>
+                                <span>Bill</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingTxn(t);
+                              }}
+                              className="p-1.5 text-stone-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors ml-1"
+                              title="Delete transaction permanently"
+                            >
+                              <span className="text-xs">🗑️</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -425,17 +442,27 @@ export function CustomerDetailPage() {
                           </td>
                           <td className="py-3.5 px-4 text-right font-black font-serif font-tabular text-rose-800">₹{customer.balance}</td>
                           <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeletingTxn(t);
-                              }}
-                              className="p-1.5 text-stone-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="Delete transaction permanently"
-                            >
-                              <span className="text-sm">🗑️</span>
-                            </button>
+                            <div className="flex items-center justify-center gap-1.5">
+                              {isCredit && (
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/invoices/new?customer=${customer.id}&transaction=${t.id}`)}
+                                  className="px-2 py-1 text-forest-900 bg-forest-50 hover:bg-forest-100 rounded-lg transition-colors text-xs font-bold border border-forest-200 flex items-center gap-1"
+                                  title="Generate Bill for this credit entry"
+                                >
+                                  <span>🧾</span>
+                                  <span>Bill</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setDeletingTxn(t)}
+                                className="p-1.5 text-stone-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                                title="Delete transaction permanently"
+                              >
+                                <span className="text-sm">🗑️</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

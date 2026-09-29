@@ -76,9 +76,9 @@ export function generateInvoiceHtml(invoice: Invoice, business?: BusinessProfile
       <td class="text-center font-mono">${idx + 1}</td>
       <td class="font-medium">${escapeHtml(item.name)}</td>
       <td class="text-center font-mono text-muted">-</td>
-      <td class="text-center font-bold font-mono">${item.quantity}</td>
-      <td class="text-center text-muted">${escapeHtml(item.unit || 'pcs')}</td>
-      <td class="text-right font-mono">${formatInr(item.unit_price)}</td>
+      <td class="text-center font-bold font-mono">${item.quantity != null ? item.quantity : '-'}</td>
+      <td class="text-center text-muted">${item.quantity != null ? escapeHtml(item.unit || 'pcs') : '-'}</td>
+      <td class="text-right font-mono">${item.unit_price != null ? formatInr(item.unit_price) : '-'}</td>
       <td class="text-right font-bold font-mono">${formatInr(item.amount)}</td>
     </tr>
   `).join('');
