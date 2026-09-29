@@ -72,5 +72,16 @@ export const authService = {
     const res = await api.post('/auth/2fa/disable/', { password });
     return res.data;
   },
+
+  async exportData(): Promise<any> {
+    const res = await api.get('/auth/export-data/');
+    return res.data;
+  },
+
+  async deleteAccount(data: { password?: string; confirmation?: string }): Promise<{ message: string }> {
+    const res = await api.post('/auth/profile/delete-account/', data);
+    return res.data;
+  },
 };
+
 

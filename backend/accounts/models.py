@@ -34,6 +34,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_2fa_enabled = models.BooleanField(default=False)
     totp_secret = models.CharField(max_length=64, blank=True, default="")
     recovery_codes = models.JSONField(default=list, blank=True)
+    # DPDP Act 2023 Compliance Fields
+    dpdp_consent_given = models.BooleanField(default=True)
+    dpdp_consent_timestamp = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

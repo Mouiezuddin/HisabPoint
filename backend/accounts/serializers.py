@@ -4,16 +4,18 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from django.utils import timezone
 from .models import User
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, label="Confirm password")
+    dpdp_consent = serializers.BooleanField(required=False, default=True, write_only=True)
 
     class Meta:
         model = User
-        fields = ["email", "name", "phone", "password", "password2"]
+        fields = ["email", "name", "phone", "password", "password2", "dpdp_consent"]
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password2"]:
@@ -22,6 +24,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("password2")
+        dpdp_consent = validated_data.pop("dpdp_consent", True)
+        if dpdp_consent:
+            validated_data["dpdp_consent_given"] = True
+            validated_data["dpdp_consent_timestamp"] = timezone.now()
         return User.objects.create_user(**validated_data)
 
 
@@ -36,9 +42,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "is_staff",
             "is_email_verified",
             "is_2fa_enabled",
+            "dpdp_consent_given",
+            "dpdp_consent_timestamp",
             "created_at",
         ]
-        read_only_fields = ["id", "email", "is_staff", "is_email_verified", "is_2fa_enabled", "created_at"]
+        read_only_fields = [
+            "id",
+            "email",
+            "is_staff",
+            "is_email_verified",
+            "is_2fa_enabled",
+            "dpdp_consent_given",
+            "dpdp_consent_timestamp",
+            "created_at",
+        ]
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -751,8 +751,8 @@ export function LandingPage() {
             <ul className="space-y-1.5">
               <li><button onClick={() => setActiveModal('benefits')} className="hover:text-[#194a32]">About Us</button></li>
               <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32]">Contact Us</button></li>
-              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32]">Privacy Policy</button></li>
-              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32]">Terms & Conditions</button></li>
+              <li><button onClick={() => navigate('/privacy')} className="hover:text-[#194a32]">Privacy Policy (DPDP)</button></li>
+              <li><button onClick={() => navigate('/terms')} className="hover:text-[#194a32]">Terms & Conditions</button></li>
             </ul>
           </div>
 

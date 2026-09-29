@@ -10,6 +10,7 @@ export function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password2: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dpdpConsent, setDpdpConsent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -26,6 +27,7 @@ export function RegisterPage() {
     if (!form.password) errs.password = 'Password is required.';
     if (form.password.length < 8) errs.password = 'Must be at least 8 characters.';
     if (form.password !== form.password2) errs.password2 = 'Passwords do not match.';
+    if (!dpdpConsent) errs.consent = 'You must agree to the Terms and Privacy Policy to proceed.';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -250,6 +252,37 @@ export function RegisterPage() {
                     </div>
                     {errors.password2 && <p className="text-[10px] text-rose-700 font-bold mt-0.5">{errors.password2}</p>}
                   </div>
+                </div>
+
+                {/* DPDP Act 2023 Statutory Consent Checkbox */}
+                <div className="pt-1">
+                  <div className="flex items-start gap-2 text-[11px] text-[#524b42]">
+                    <input
+                      id="reg-consent"
+                      type="checkbox"
+                      checked={dpdpConsent}
+                      onChange={(e) => {
+                        setDpdpConsent(e.target.checked);
+                        if (e.target.checked) setErrors((errs) => ({ ...errs, consent: '' }));
+                      }}
+                      className="mt-0.5 rounded border-[#c4b595] text-[#194a32] focus:ring-[#194a32] cursor-pointer"
+                      required
+                    />
+                    <label htmlFor="reg-consent" className="cursor-pointer leading-tight select-none">
+                      I agree to the{' '}
+                      <Link to="/terms" target="_blank" className="font-bold text-[#194a32] hover:underline">
+                        Terms of Service
+                      </Link>{' '}
+                      and acknowledge the{' '}
+                      <Link to="/privacy" target="_blank" className="font-bold text-[#194a32] hover:underline">
+                        Privacy Policy
+                      </Link>{' '}
+                      under India&apos;s DPDP Act 2023.
+                    </label>
+                  </div>
+                  {errors.consent && (
+                    <p className="text-[10px] text-rose-700 font-bold mt-1">{errors.consent}</p>
+                  )}
                 </div>
 
                 <button

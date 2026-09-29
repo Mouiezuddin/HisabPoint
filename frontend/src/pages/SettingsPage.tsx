@@ -10,6 +10,7 @@ import { ChangePasswordModal } from '../components/settings/ChangePasswordModal'
 import { EditProfileModal } from '../components/settings/EditProfileModal';
 import { SecurityModal } from '../components/settings/SecurityModal';
 import { HelpSupportModal } from '../components/settings/HelpSupportModal';
+import { PrivacyDataModal } from '../components/settings/PrivacyDataModal';
 
 export function SettingsPage() {
   const { user, logout } = useAuth();
@@ -24,6 +25,7 @@ export function SettingsPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -168,6 +170,12 @@ export function SettingsPage() {
           subtitle="FAQ and customer care contact"
           onClick={() => setShowHelpModal(true)}
         />
+        <SettingsRow
+          icon="🛡️"
+          title="Data Privacy & DPDP Rights"
+          subtitle="Export data, erase account & statutory compliance"
+          onClick={() => setShowPrivacyModal(true)}
+        />
       </div>
 
       {/* Modals */}
@@ -195,6 +203,11 @@ export function SettingsPage() {
       <HelpSupportModal
         isOpen={showHelpModal}
         onClose={() => setShowHelpModal(false)}
+      />
+
+      <PrivacyDataModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
       />
 
       <ConfirmDialog

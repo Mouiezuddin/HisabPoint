@@ -18,8 +18,13 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from datetime import timedelta
 from django.utils import timezone
+from django.db import transaction
 
 from .models import User, LoginAttempt
+from customers.models import Customer
+from ledger.models import Transaction
+from businesses.models import BusinessProfile
+from billing.models import Invoice, InvoiceItem
 from .serializers import (
     RegisterSerializer,
     UserProfileSerializer,
@@ -589,6 +594,8 @@ def google_auth_view(request):
                 email=email,
                 name=name,
                 is_email_verified=True,
+                dpdp_consent_given=True,
+                dpdp_consent_timestamp=timezone.now(),
             )
             user.set_unusable_password()
             user.save()
@@ -615,3 +622,193 @@ def google_auth_view(request):
     except Exception as e:
         err_msg = f"Google authentication failed: {str(e)}"
         return Response({"error": err_msg, "message": err_msg}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ── DPDP Act 2023 Compliance Views ──────────────────────────────────────────
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def export_personal_data_view(request):
+    """
+    GET /api/auth/export-data/
+    Right to Access Personal Data under Section 11 of India's DPDP Act 2023.
+    Provides complete data portability in machine-readable JSON format.
+    """
+    user = cast(User, request.user)
+
+    user_info = {
+        "user_id": str(user.id),
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone,
+        "is_email_verified": user.is_email_verified,
+        "is_2fa_enabled": user.is_2fa_enabled,
+        "created_at": user.created_at.isoformat(),
+        "dpdp_consent_given": getattr(user, "dpdp_consent_given", True),
+        "dpdp_consent_timestamp": (
+            user.dpdp_consent_timestamp.isoformat()
+            if getattr(user, "dpdp_consent_timestamp", None)
+            else None
+        ),
+    }
+
+    bp = getattr(user, "business_profile", None)
+    business_info = {
+        "shop_name": bp.shop_name if bp else "",
+        "owner_name": bp.owner_name if bp else "",
+        "address": bp.address if bp else "",
+        "phone": bp.phone if bp else "",
+        "gstin": bp.gstin if bp else "",
+    } if bp else {}
+
+    customers_data = []
+    for c in Customer.objects.filter(user=user).order_by("name"):
+        customers_data.append({
+            "id": str(c.id),
+            "name": c.name,
+            "phone": c.phone,
+            "address": c.address,
+            "notes": c.notes,
+            "status": c.status,
+            "created_at": c.created_at.isoformat(),
+        })
+
+    transactions_data = []
+    for t in Transaction.objects.filter(customer__user=user).select_related("customer").order_by("-transaction_date", "-created_at"):
+        transactions_data.append({
+            "id": str(t.id),
+            "customer_id": str(t.customer_id),
+            "customer_name": t.customer.name,
+            "type": t.type,
+            "amount": str(t.amount),
+            "quantity": t.quantity,
+            "description": t.description,
+            "transaction_date": t.transaction_date.isoformat(),
+            "created_at": t.created_at.isoformat(),
+        })
+
+    invoices_data = []
+    for inv in Invoice.objects.filter(user=user).prefetch_related("items").order_by("-invoice_date", "-created_at"):
+        items = [
+            {
+                "name": item.name,
+                "quantity": str(item.quantity),
+                "unit": item.unit,
+                "unit_price": str(item.unit_price),
+                "amount": str(item.amount),
+            }
+            for item in inv.items.all()
+        ]
+        invoices_data.append({
+            "invoice_number": inv.invoice_number,
+            "customer_name": inv.customer_name,
+            "customer_phone": inv.customer_phone,
+            "invoice_date": inv.invoice_date.isoformat(),
+            "payment_status": inv.payment_status,
+            "payment_mode": inv.payment_mode,
+            "subtotal": str(inv.subtotal),
+            "discount_amount": str(inv.discount_amount),
+            "tax_amount": str(inv.tax_amount),
+            "total_amount": str(inv.total_amount),
+            "paid_amount": str(inv.paid_amount),
+            "items": items,
+        })
+
+    export_payload = {
+        "dpdp_metadata": {
+            "title": "HisabPoint Personal Data Export",
+            "statutory_compliance": "Digital Personal Data Protection Act, 2023 (DPDP Act) — Section 11",
+            "data_fiduciary": "HisabPoint Technologies",
+            "exported_at": timezone.now().isoformat(),
+            "data_principal": user.email,
+        },
+        "account": user_info,
+        "business_profile": business_info,
+        "customers_count": len(customers_data),
+        "customers": customers_data,
+        "transactions_count": len(transactions_data),
+        "ledger_transactions": transactions_data,
+        "invoices_count": len(invoices_data),
+        "invoices": invoices_data,
+    }
+
+    response = Response(export_payload, status=status.HTTP_200_OK)
+    response["Content-Disposition"] = f'attachment; filename="hisabpoint_personal_data_{user.id}.json"'
+    return response
+
+
+@api_view(["POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_account_view(request):
+    """
+    POST/DELETE /api/auth/profile/delete-account/
+    Right to Erasure ('Right to be Forgotten') under Section 12(1)(b) & Section 8(7) of DPDP Act 2023.
+    Permanently erases all user profile data, business details, customer directories,
+    ledger transactions, invoices, and login history.
+    """
+    user = cast(User, request.user)
+    password = request.data.get("password", "")
+    confirmation = request.data.get("confirmation", "").strip().upper()
+
+    # Password check if user has a set password
+    if user.has_usable_password():
+        if not password or not user.check_password(password):
+            return Response(
+                {"message": "Incorrect password. Account deletion aborted for security."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        # OAuth user without password must type "DELETE"
+        if confirmation != "DELETE":
+            return Response(
+                {"message": "Please type 'DELETE' to confirm irreversible account erasure."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    user_email = user.email
+
+    with transaction.atomic():
+        # 1. Unlink invoice-to-transaction foreign key to avoid circular protection
+        Invoice.objects.filter(user=user).update(ledger_transaction=None)
+
+        # 2. Delete invoice items
+        InvoiceItem.objects.filter(invoice__user=user).delete()
+
+        # 3. Delete invoices
+        Invoice.objects.filter(user=user).delete()
+
+        # 4. Break reversal foreign keys in transactions to avoid integrity errors
+        Transaction.objects.filter(customer__user=user).update(reversal_of=None)
+
+        # 5. Delete transactions
+        Transaction.objects.filter(created_by=user).delete()
+        Transaction.objects.filter(customer__user=user).delete()
+
+        # 6. Delete customers
+        Customer.objects.filter(user=user).delete()
+
+        # 7. Delete business profile
+        BusinessProfile.objects.filter(user=user).delete()
+
+        # 8. Delete login attempt tracking
+        LoginAttempt.objects.filter(identifier__iexact=f"email:{user_email}").delete()
+
+        # 9. Blacklist active refresh tokens if sent
+        refresh_token = request.COOKIES.get("refresh_token") or request.data.get("refresh")
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+
+        # 10. Delete the user
+        user.delete()
+
+    response = Response(
+        {
+            "message": f"Account '{user_email}' and all associated records have been permanently erased under DPDP Act provisions."
+        },
+        status=status.HTTP_200_OK,
+    )
+    return clear_jwt_cookies(response)
+

@@ -37,6 +37,11 @@ const FAQS: FaqItem[] = [
     answer:
       'Navigate to the Reports page from the navigation bar. You can view total credit given, payments collected, and export customer ledger summaries.',
   },
+  {
+    question: "Does HisabPoint comply with India's DPDP Act, 2023?",
+    answer:
+      "Yes! HisabPoint complies with India's Digital Personal Data Protection Act, 2023. You have the right to access (one-click JSON data export), correct, and permanently erase all personal and ledger data via Settings > Data Privacy & DPDP Rights. Inquiries can be addressed to grievance@hisabpoint.com.",
+  },
 ];
 
 export function HelpSupportModal({ isOpen, onClose }: HelpSupportModalProps) {
@@ -73,6 +78,16 @@ export function HelpSupportModal({ isOpen, onClose }: HelpSupportModalProps) {
               className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-forest-900 hover:bg-forest-950 text-gold-300 rounded-xl text-xs font-bold shadow-sm transition-transform active:scale-95"
             >
               <span>✉️ Email Us</span>
+            </a>
+          </div>
+
+          <div className="pt-2 border-t border-parchment-300/80 flex items-center justify-between text-[11px]">
+            <span className="text-stone-600">DPDP Grievance Officer:</span>
+            <a
+              href="mailto:grievance@hisabpoint.com?subject=DPDP%20Act%20Grievance%20Notice"
+              className="text-[#194a32] font-bold hover:underline"
+            >
+              grievance@hisabpoint.com
             </a>
           </div>
         </div>

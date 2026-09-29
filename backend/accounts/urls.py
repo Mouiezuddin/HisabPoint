@@ -17,6 +17,8 @@ from .views import (
     send_email_verification_view,
     verify_email_view,
     google_auth_view,
+    export_personal_data_view,
+    delete_account_view,
 )
 from .admin_views import AdminUserListView, admin_stats_view
 
@@ -28,6 +30,8 @@ urlpatterns = [
     path("logout/", logout_view, name="auth-logout"),
     path("token/refresh/", cookie_refresh_token_view, name="token-refresh"),
     path("profile/", ProfileView.as_view(), name="auth-profile"),
+    path("profile/delete-account/", delete_account_view, name="auth-delete-account"),
+    path("export-data/", export_personal_data_view, name="auth-export-data"),
     path("change-password/", change_password_view, name="auth-change-password"),
     path("password-reset/", password_reset_request_view, name="auth-password-reset"),
     path("password-reset-confirm/", password_reset_confirm_view, name="auth-password-reset-confirm"),

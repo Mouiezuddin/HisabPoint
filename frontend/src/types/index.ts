@@ -7,6 +7,8 @@ export interface User {
   phone: string;
   is_2fa_enabled?: boolean;
   is_email_verified?: boolean;
+  dpdp_consent_given?: boolean;
+  dpdp_consent_timestamp?: string | null;
   created_at: string;
 }
 

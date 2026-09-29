@@ -195,3 +195,67 @@ class PasswordResetTestCase(APITestCase):
             {"uid": uid, "token": "invalid-token", "new_password": "NewStrongPassword456!"},
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class DPDPComplianceTestCase(APITestCase):
+    def setUp(self):
+        self.password = "ValidPassword123!"
+        self.user = User.objects.create_user(
+            email="dpdp_user@test.com",
+            name="DPDP Test Shopkeeper",
+            password=self.password,
+            dpdp_consent_given=True,
+        )
+
+    def test_dpdp_export_personal_data(self):
+        client = cast(APIClient, self.client)
+        client.force_authenticate(user=self.user)
+        response: Any = client.get("/api/auth/export-data/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("dpdp_metadata", data)
+        self.assertEqual(data["dpdp_metadata"]["data_principal"], self.user.email)
+        self.assertIn("account", data)
+        self.assertEqual(data["account"]["name"], self.user.name)
+        self.assertIn("customers", data)
+        self.assertIn("ledger_transactions", data)
+        self.assertIn("invoices", data)
+
+    def test_dpdp_delete_account_incorrect_password(self):
+        client = cast(APIClient, self.client)
+        client.force_authenticate(user=self.user)
+        response: Any = client.post(
+            "/api/auth/profile/delete-account/",
+            {"password": "WrongPassword123!"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(User.objects.filter(id=self.user.id).exists())
+
+    def test_dpdp_delete_account_success(self):
+        from customers.models import Customer
+        from ledger.models import Transaction, TransactionType
+        from datetime import date
+
+        client = cast(APIClient, self.client)
+        client.force_authenticate(user=self.user)
+
+        # Create customer and transaction
+        user_id = self.user.id
+        cust = Customer.objects.create(user=self.user, name="Ramesh Kumar", phone="9876543210")
+        Transaction.objects.create(
+            customer=cust,
+            created_by=self.user,
+            type=TransactionType.CREDIT,
+            amount="500.00",
+            transaction_date=date.today(),
+        )
+
+        response: Any = client.post(
+            "/api/auth/profile/delete-account/",
+            {"password": self.password},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(User.objects.filter(id=user_id).exists())
+        self.assertFalse(Customer.objects.filter(user_id=user_id).exists())
+
+
