@@ -42,11 +42,20 @@ export function formatDateFull(dateStr: string): string {
 }
 
 /**
- * Get today's date as YYYY-MM-DD for form default values.
+ * Convert any Date object to local YYYY-MM-DD string without UTC timezone skew.
+ */
+export function toInputDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Get today's date as YYYY-MM-DD for form default values (local time).
  */
 export function todayAsInputDate(): string {
-  const now = new Date();
-  return now.toISOString().split('T')[0];
+  return toInputDate(new Date());
 }
 
 /**

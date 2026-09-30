@@ -1,12 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { formatDateFull, todayAsInputDate } from '../../utils/format';
+import React, { useState, useMemo, useEffect } from 'react';
+import { formatDate, formatDateFull, todayAsInputDate } from '../../utils/format';
 
 export interface CustomCalendarPickerProps {
   startDate: string; // YYYY-MM-DD
   endDate: string;   // YYYY-MM-DD
   onChange: (startDate: string, endDate: string, daysCount: number) => void;
   className?: string;
-  allowPastOnly?: boolean;
 }
 
 const MONTH_NAMES = [
@@ -20,44 +19,51 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-function toDateString(d: Date): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function toDateString(year: number, monthIndex: number, day: number): string {
+  return `${year}-${pad(monthIndex + 1)}-${pad(day)}`;
 }
 
-function parseDateString(s: string): Date {
+function parseDateComponents(s: string): { year: number; month: number; day: number } {
+  if (!s || !s.includes('-')) {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
+  }
   const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, m - 1, d);
+  return { year: y, month: m - 1, day: d };
 }
 
 function calculateDaysCount(startStr: string, endStr: string): number {
   if (!startStr || !endStr) return 1;
-  const d1 = parseDateString(startStr).getTime();
-  const d2 = parseDateString(endStr).getTime();
+  const p1 = parseDateComponents(startStr);
+  const p2 = parseDateComponents(endStr);
+  const d1 = new Date(p1.year, p1.month, p1.day).getTime();
+  const d2 = new Date(p2.year, p2.month, p2.day).getTime();
   if (isNaN(d1) || isNaN(d2)) return 1;
   const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
   return Math.max(1, diff);
 }
 
-function getNDaysAgo(days: number, fromDateStr = todayAsInputDate()): string {
-  const dt = parseDateString(fromDateStr);
+function getNDaysAgo(days: number, refDateStr: string): string {
+  const p = parseDateComponents(refDateStr);
+  const dt = new Date(p.year, p.month, p.day);
   dt.setDate(dt.getDate() - (days - 1));
-  return toDateString(dt);
+  return toDateString(dt.getFullYear(), dt.getMonth(), dt.getDate());
 }
 
-function getStartOfMonth(dateStr = todayAsInputDate()): string {
-  const dt = parseDateString(dateStr);
-  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-01`;
+function getStartOfMonth(dateStr: string): string {
+  const p = parseDateComponents(dateStr);
+  return toDateString(p.year, p.month, 1);
 }
 
-function getPreviousMonthRange(dateStr = todayAsInputDate()): { start: string; end: string } {
-  const dt = parseDateString(dateStr);
-  const prevMonthDate = new Date(dt.getFullYear(), dt.getMonth() - 1, 1);
-  const year = prevMonthDate.getFullYear();
-  const month = prevMonthDate.getMonth();
-  const lastDay = new Date(year, month + 1, 0).getDate();
+function getPreviousMonthRange(dateStr: string): { start: string; end: string } {
+  const p = parseDateComponents(dateStr);
+  const prevMonthDate = new Date(p.year, p.month - 1, 1);
+  const y = prevMonthDate.getFullYear();
+  const m = prevMonthDate.getMonth();
+  const lastDay = new Date(y, m + 1, 0).getDate();
   return {
-    start: `${year}-${pad(month + 1)}-01`,
-    end: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+    start: toDateString(y, m, 1),
+    end: toDateString(y, m, lastDay),
   };
 }
 
@@ -69,25 +75,32 @@ export function CustomCalendarPicker({
 }: CustomCalendarPickerProps) {
   const today = todayAsInputDate();
 
-  // Navigation state for the visible month/year
-  const initialDate = endDate ? parseDateString(endDate) : new Date();
-  const [visibleYear, setVisibleYear] = useState(initialDate.getFullYear());
-  const [visibleMonth, setVisibleMonth] = useState(initialDate.getMonth()); // 0-11
+  // Active selection target: 'start' or 'end'
+  const [activeTarget, setActiveTarget] = useState<'start' | 'end'>('start');
 
-  // In-progress range selection click state
-  const [pickingStart, setPickingStart] = useState<string | null>(null);
-  const [hoverDate, setHoverDate] = useState<string | null>(null);
+  // Month and Year visible on the calendar grid
+  const initial = useMemo(() => parseDateComponents(endDate || startDate || today), [endDate, startDate, today]);
+  const [visibleYear, setVisibleYear] = useState(initial.year);
+  const [visibleMonth, setVisibleMonth] = useState(initial.month);
 
-  // Stepper / Direct Number of Days input state
+  // Sync visible month when startDate or endDate change from outside
+  useEffect(() => {
+    if (endDate) {
+      const p = parseDateComponents(endDate);
+      setVisibleYear(p.year);
+      setVisibleMonth(p.month);
+    }
+  }, [endDate]);
+
+  // Stepper input value
   const currentDays = useMemo(() => calculateDaysCount(startDate, endDate), [startDate, endDate]);
-  const [daysInputValue, setDaysInputValue] = useState<string>(String(currentDays));
+  const [daysInput, setDaysInput] = useState<string>(String(currentDays));
 
-  // Keep days input in sync when startDate/endDate change from outside
-  React.useEffect(() => {
-    setDaysInputValue(String(currentDays));
+  useEffect(() => {
+    setDaysInput(String(currentDays));
   }, [currentDays]);
 
-  // Navigate visible month
+  // Month navigation
   const prevMonth = () => {
     if (visibleMonth === 0) {
       setVisibleMonth(11);
@@ -107,15 +120,16 @@ export function CustomCalendarPicker({
   };
 
   const jumpToToday = () => {
-    const now = new Date();
-    setVisibleYear(now.getFullYear());
-    setVisibleMonth(now.getMonth());
+    const p = parseDateComponents(today);
+    setVisibleYear(p.year);
+    setVisibleMonth(p.month);
   };
 
-  // Generate days for visible month
+  // Build grid of days
   const monthGrid = useMemo(() => {
-    const firstDayIndex = new Date(visibleYear, visibleMonth, 1).getDay(); // 0 = Sun
-    const totalDaysInMonth = new Date(visibleYear, visibleMonth + 1, 0).getDate();
+    const firstDayOfWeek = new Date(visibleYear, visibleMonth, 1).getDay(); // 0 = Sun
+    const daysInMonth = new Date(visibleYear, visibleMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(visibleYear, visibleMonth, 0).getDate();
 
     const cells: Array<{
       dateStr: string;
@@ -124,12 +138,11 @@ export function CustomCalendarPicker({
       isToday: boolean;
     }> = [];
 
-    // Empty lead cells from previous month
-    const prevMonthDays = new Date(visibleYear, visibleMonth, 0).getDate();
-    for (let i = firstDayIndex - 1; i >= 0; i--) {
+    // Lead cells from previous month
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
       const dNum = prevMonthDays - i;
       const prevDate = new Date(visibleYear, visibleMonth - 1, dNum);
-      const str = toDateString(prevDate);
+      const str = toDateString(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
       cells.push({
         dateStr: str,
         dayNumber: dNum,
@@ -138,10 +151,9 @@ export function CustomCalendarPicker({
       });
     }
 
-    // Current month cells
-    for (let d = 1; d <= totalDaysInMonth; d++) {
-      const curDate = new Date(visibleYear, visibleMonth, d);
-      const str = toDateString(curDate);
+    // Days in current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const str = toDateString(visibleYear, visibleMonth, d);
       cells.push({
         dateStr: str,
         dayNumber: d,
@@ -150,11 +162,11 @@ export function CustomCalendarPicker({
       });
     }
 
-    // Trailing cells to fill last week
-    const remaining = (7 - (cells.length % 7)) % 7;
-    for (let d = 1; d <= remaining; d++) {
+    // Trailing cells to fill week
+    const remainder = (7 - (cells.length % 7)) % 7;
+    for (let d = 1; d <= remainder; d++) {
       const nextDate = new Date(visibleYear, visibleMonth + 1, d);
-      const str = toDateString(nextDate);
+      const str = toDateString(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
       cells.push({
         dateStr: str,
         dayNumber: d,
@@ -166,48 +178,41 @@ export function CustomCalendarPicker({
     return cells;
   }, [visibleYear, visibleMonth, today]);
 
-  // Handle cell click for range selection
-  const handleCellClick = (cellDate: string) => {
-    if (!pickingStart) {
-      // First click: sets tentative start
-      setPickingStart(cellDate);
-    } else {
-      // Second click: completes range
-      let s = pickingStart;
-      let e = cellDate;
-      if (s > e) {
-        // Swap if clicked in reverse
-        const temp = s;
-        s = e;
-        e = temp;
+  // Click on a date cell
+  const handleDateClick = (clickedDate: string) => {
+    if (activeTarget === 'start') {
+      let newStart = clickedDate;
+      let newEnd = endDate;
+      // If new start is after current end, adjust end to match start
+      if (newStart > newEnd) {
+        newEnd = newStart;
       }
-      const days = calculateDaysCount(s, e);
-      setPickingStart(null);
-      setHoverDate(null);
-      onChange(s, e, days);
+      const days = calculateDaysCount(newStart, newEnd);
+      onChange(newStart, newEnd, days);
+      setActiveTarget('end'); // Auto-advance to picking end date
+    } else {
+      let newStart = startDate;
+      let newEnd = clickedDate;
+      // If new end is before current start, adjust start to match end
+      if (newEnd < newStart) {
+        newStart = newEnd;
+      }
+      const days = calculateDaysCount(newStart, newEnd);
+      onChange(newStart, newEnd, days);
+      setActiveTarget('start'); // Auto-advance back to start date
     }
   };
 
-  // Direct days stepper handlers ("Works on our opinion")
-  const applyCustomDays = (numDays: number) => {
-    const valid = Math.max(1, Math.min(365, numDays));
-    const newStart = getNDaysAgo(valid, today);
-    setDaysInputValue(String(valid));
-    setPickingStart(null);
-    onChange(newStart, today, valid);
-  };
-
-  const handleDaysInputSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsed = parseInt(daysInputValue, 10);
-    if (!isNaN(parsed) && parsed > 0) {
-      applyCustomDays(parsed);
-    }
+  // Direct days stepper adjustment
+  const handleApplyDays = (days: number) => {
+    const validDays = Math.max(1, Math.min(365, days));
+    setDaysInput(String(validDays));
+    const newStart = getNDaysAgo(validDays, today);
+    onChange(newStart, today, validDays);
   };
 
   // Quick Preset Handlers
   const handlePreset = (preset: 'today' | 'yesterday' | '3days' | '7days' | '15days' | '30days' | 'month' | 'prevMonth') => {
-    setPickingStart(null);
     if (preset === 'today') {
       onChange(today, today, 1);
     } else if (preset === 'yesterday') {
@@ -230,42 +235,62 @@ export function CustomCalendarPicker({
     }
   };
 
-  // Determine effective range for visual cell rendering
-  const effectiveStart = pickingStart || startDate;
-  const effectiveEnd = pickingStart
-    ? (hoverDate || pickingStart)
-    : endDate;
-
-  const [rangeStart, rangeEnd] = useMemo(() => {
-    if (!effectiveStart && !effectiveEnd) return ['', ''];
-    if (!effectiveEnd) return [effectiveStart, effectiveStart];
-    if (effectiveStart > effectiveEnd) return [effectiveEnd, effectiveStart];
-    return [effectiveStart, effectiveEnd];
-  }, [effectiveStart, effectiveEnd]);
+  // Set single day (start and end = same day)
+  const handleSetSingleDay = () => {
+    onChange(startDate, startDate, 1);
+  };
 
   return (
     <div className={`custom-calendar-picker bg-parchment-50 rounded-2xl border-2 border-parchment-300 p-4 shadow-sm space-y-4 ${className}`}>
-      {/* Top Bar: Direct Opinion / Days Selection Stepper */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-parchment-300">
-        <div>
-          <span className="text-xs font-bold text-stone-900 font-serif flex items-center gap-1.5">
-            <span>🗓️</span>
-            <span>Custom Billing Calendar</span>
+      {/* 1. Header with Active Target Selection Tabs and Days Stepper */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-parchment-300">
+        {/* Active Target Buttons: Click to select Start or End */}
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 font-serif">
+            Select Billing Range (Click to choose date)
           </span>
-          <p className="text-[11px] text-stone-500 mt-0.5">
-            Click start & end dates below or type any custom number of days.
-          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTarget('start')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                activeTarget === 'start'
+                  ? 'bg-forest-900 text-gold-300 border-forest-950 ring-2 ring-forest-700/50 shadow-sm'
+                  : 'bg-white hover:bg-parchment-200 text-stone-700 border-parchment-300'
+              }`}
+            >
+              <span>🟢 From:</span>
+              <span className="font-mono">{formatDate(startDate) || startDate}</span>
+              {activeTarget === 'start' && <span className="text-[10px] bg-forest-800 px-1 rounded text-gold-300">Picking</span>}
+            </button>
+
+            <span className="text-stone-400 font-bold">→</span>
+
+            <button
+              type="button"
+              onClick={() => setActiveTarget('end')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                activeTarget === 'end'
+                  ? 'bg-forest-900 text-gold-300 border-forest-950 ring-2 ring-forest-700/50 shadow-sm'
+                  : 'bg-white hover:bg-parchment-200 text-stone-700 border-parchment-300'
+              }`}
+            >
+              <span>🔴 To:</span>
+              <span className="font-mono">{formatDate(endDate) || endDate}</span>
+              {activeTarget === 'end' && <span className="text-[10px] bg-forest-800 px-1 rounded text-gold-300">Picking</span>}
+            </button>
+          </div>
         </div>
 
-        {/* Days Stepper: type or increment number of days */}
-        <form onSubmit={handleDaysInputSubmit} className="flex items-center gap-1.5 bg-white p-1 rounded-xl border-2 border-parchment-300 shadow-xs">
-          <span className="text-[11px] font-bold text-stone-600 pl-2">Days:</span>
+        {/* 2. Direct Days Stepper (NO form tag, zero submit conflict) */}
+        <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border-2 border-parchment-300 shadow-xs self-start md:self-auto">
+          <span className="text-[11px] font-bold text-stone-600 pl-1.5">Days:</span>
           <button
             type="button"
-            onClick={() => applyCustomDays(currentDays - 1)}
+            onClick={() => handleApplyDays(currentDays - 1)}
             disabled={currentDays <= 1}
             className="w-7 h-7 rounded-lg bg-parchment-100 hover:bg-parchment-200 active:bg-parchment-300 text-stone-800 font-bold flex items-center justify-center text-sm disabled:opacity-40 cursor-pointer"
-            title="Decrease 1 Day"
+            title="Subtract 1 Day"
           >
             −
           </button>
@@ -273,46 +298,48 @@ export function CustomCalendarPicker({
             type="number"
             min="1"
             max="365"
-            value={daysInputValue}
-            onChange={(e) => setDaysInputValue(e.target.value)}
-            onBlur={() => {
-              const val = parseInt(daysInputValue, 10);
-              if (!isNaN(val) && val > 0 && val !== currentDays) {
-                applyCustomDays(val);
-              } else {
-                setDaysInputValue(String(currentDays));
+            value={daysInput}
+            onChange={(e) => setDaysInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                const val = parseInt(daysInput, 10);
+                if (!isNaN(val) && val > 0) handleApplyDays(val);
               }
             }}
             className="w-12 text-center text-xs font-mono font-black text-forest-900 border border-parchment-300 rounded-md py-1 focus:outline-none focus:ring-1 focus:ring-forest-800"
           />
           <button
             type="button"
-            onClick={() => applyCustomDays(currentDays + 1)}
+            onClick={() => handleApplyDays(currentDays + 1)}
             className="w-7 h-7 rounded-lg bg-parchment-100 hover:bg-parchment-200 active:bg-parchment-300 text-stone-800 font-bold flex items-center justify-center text-sm cursor-pointer"
-            title="Increase 1 Day"
+            title="Add 1 Day"
           >
             +
           </button>
           <button
-            type="submit"
-            className="text-[10px] font-bold bg-forest-900 text-gold-300 px-2 py-1.5 rounded-lg hover:bg-forest-950 transition-colors"
+            type="button"
+            onClick={() => {
+              const val = parseInt(daysInput, 10);
+              if (!isNaN(val) && val > 0) handleApplyDays(val);
+            }}
+            className="text-[10px] font-bold bg-forest-900 text-gold-300 px-2.5 py-1.5 rounded-lg hover:bg-forest-950 transition-colors cursor-pointer"
           >
             Apply
           </button>
-        </form>
+        </div>
       </div>
 
-      {/* Quick Opinion Presets */}
+      {/* 3. Quick Opinion / Preset Buttons */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[10px] font-bold uppercase text-stone-500 tracking-wider">
-            Quick Options
+            Quick Presets
           </span>
-          {pickingStart && (
-            <span className="text-[10px] text-amber-800 font-bold animate-pulse">
-              👉 Click end date to finish range
-            </span>
-          )}
+          <span className="text-[10px] text-forest-900 font-bold bg-forest-100 px-2 py-0.5 rounded border border-forest-200">
+            Tap a date below to set {activeTarget === 'start' ? '🟢 Start Date' : '🔴 End Date'}
+          </span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {[
@@ -332,16 +359,25 @@ export function CustomCalendarPicker({
               className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                 item.active
                   ? 'bg-forest-900 text-gold-300 border-forest-950 shadow-xs'
-                  : 'bg-white hover:bg-parchment-200/80 text-stone-700 border-parchment-300'
+                  : 'bg-white hover:bg-parchment-200 text-stone-700 border-parchment-300'
               }`}
             >
               {item.label}
             </button>
           ))}
+          {startDate !== endDate && (
+            <button
+              type="button"
+              onClick={handleSetSingleDay}
+              className="text-xs font-bold px-2.5 py-1 rounded-lg border bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 cursor-pointer"
+            >
+              Make Single Day
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Calendar Grid Container */}
+      {/* 4. Interactive Visual Month Grid */}
       <div className="bg-white rounded-xl border border-parchment-300 p-3 shadow-xs">
         {/* Month Navigator Header */}
         <div className="flex items-center justify-between mb-3 px-1">
@@ -354,7 +390,7 @@ export function CustomCalendarPicker({
               onClick={jumpToToday}
               className="text-[10px] font-bold text-forest-800 hover:text-forest-950 bg-forest-50 px-2 py-0.5 rounded border border-forest-200 cursor-pointer"
             >
-              Today
+              Jump to Today
             </button>
           </div>
 
@@ -362,7 +398,7 @@ export function CustomCalendarPicker({
             <button
               type="button"
               onClick={prevMonth}
-              className="w-7 h-7 rounded-lg hover:bg-parchment-200 text-stone-700 font-bold flex items-center justify-center transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg hover:bg-parchment-200 text-stone-800 font-bold flex items-center justify-center transition-colors cursor-pointer text-base"
               title="Previous Month"
             >
               ‹
@@ -370,7 +406,7 @@ export function CustomCalendarPicker({
             <button
               type="button"
               onClick={nextMonth}
-              className="w-7 h-7 rounded-lg hover:bg-parchment-200 text-stone-700 font-bold flex items-center justify-center transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg hover:bg-parchment-200 text-stone-800 font-bold flex items-center justify-center transition-colors cursor-pointer text-base"
               title="Next Month"
             >
               ›
@@ -378,7 +414,7 @@ export function CustomCalendarPicker({
           </div>
         </div>
 
-        {/* Weekday Header */}
+        {/* Weekday Row */}
         <div className="grid grid-cols-7 gap-1 text-center mb-1">
           {WEEKDAY_NAMES.map((w, idx) => (
             <div
@@ -392,46 +428,45 @@ export function CustomCalendarPicker({
           ))}
         </div>
 
-        {/* Month Day Cells */}
+        {/* Day Cells Grid */}
         <div className="grid grid-cols-7 gap-y-1 gap-x-0.5">
           {monthGrid.map((cell) => {
-            const isStart = cell.dateStr === rangeStart;
-            const isEnd = cell.dateStr === rangeEnd;
+            const isStart = cell.dateStr === startDate;
+            const isEnd = cell.dateStr === endDate;
             const isSingle = isStart && isEnd;
-            const inRange = rangeStart && rangeEnd && cell.dateStr > rangeStart && cell.dateStr < rangeEnd;
+            const inRange = startDate && endDate && cell.dateStr > startDate && cell.dateStr < endDate;
 
-            let cellClass = 'relative h-8 flex items-center justify-center text-xs font-mono font-medium rounded-lg cursor-pointer transition-colors ';
+            let cellClass = 'relative h-9 flex items-center justify-center text-xs font-mono font-medium rounded-lg cursor-pointer transition-all ';
 
             if (!cell.isCurrentMonth) {
-              cellClass += 'text-stone-300 hover:text-stone-500 ';
+              cellClass += 'text-stone-300 hover:text-stone-600 ';
             } else {
               cellClass += 'text-stone-800 ';
             }
 
             if (isSingle) {
-              cellClass += 'bg-forest-900 text-gold-300 font-black shadow-xs rounded-xl z-10 ';
+              cellClass += 'bg-forest-900 text-gold-300 font-black shadow-xs rounded-xl ring-2 ring-forest-700/60 z-10 ';
             } else if (isStart) {
-              cellClass += 'bg-forest-900 text-gold-300 font-black rounded-l-xl rounded-r-none z-10 shadow-xs ';
+              cellClass += 'bg-forest-900 text-gold-300 font-black rounded-l-xl rounded-r-none z-10 shadow-xs ring-1 ring-forest-800 ';
             } else if (isEnd) {
-              cellClass += 'bg-forest-900 text-gold-300 font-black rounded-r-xl rounded-l-none z-10 shadow-xs ';
+              cellClass += 'bg-forest-900 text-gold-300 font-black rounded-r-xl rounded-l-none z-10 shadow-xs ring-1 ring-forest-800 ';
             } else if (inRange) {
-              cellClass += 'bg-forest-100 text-forest-950 font-bold rounded-none ';
+              cellClass += 'bg-forest-100/90 text-forest-950 font-bold rounded-none ';
             } else {
-              cellClass += 'hover:bg-parchment-200/80 ';
+              cellClass += 'hover:bg-parchment-200 ';
             }
 
             return (
               <button
                 key={cell.dateStr}
                 type="button"
-                onClick={() => handleCellClick(cell.dateStr)}
-                onMouseEnter={() => pickingStart && setHoverDate(cell.dateStr)}
+                onClick={() => handleDateClick(cell.dateStr)}
                 className={cellClass}
-                title={cell.dateStr}
+                title={`${cell.dateStr} (Click to set ${activeTarget === 'start' ? 'Start' : 'End'} Date)`}
               >
                 <span>{cell.dayNumber}</span>
                 {cell.isToday && !isStart && !isEnd && (
-                  <span className="absolute bottom-1 w-1 h-1 bg-forest-700 rounded-full" />
+                  <span className="absolute bottom-1 w-1.5 h-1.5 bg-forest-700 rounded-full" />
                 )}
               </button>
             );
@@ -439,25 +474,65 @@ export function CustomCalendarPicker({
         </div>
       </div>
 
-      {/* Selected Range Display Banner */}
+      {/* 5. Synchronized Native Inputs for Direct Typing or Browser Pick */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-parchment-100/60 p-3 rounded-xl border border-parchment-300">
+        <div>
+          <label className="block text-[10px] font-bold text-stone-600 uppercase tracking-wider mb-1">
+            🟢 Start Date (From)
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            max={endDate}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                const days = calculateDaysCount(val, endDate);
+                onChange(val, endDate, days);
+              }
+            }}
+            className="w-full text-xs font-mono font-medium p-2 rounded-lg border border-parchment-400 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-forest-700"
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-stone-600 uppercase tracking-wider mb-1">
+            🔴 End Date (To)
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                const days = calculateDaysCount(startDate, val);
+                onChange(startDate, val, days);
+              }
+            }}
+            className="w-full text-xs font-mono font-medium p-2 rounded-lg border border-parchment-400 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-forest-700"
+          />
+        </div>
+      </div>
+
+      {/* 6. Active Period Banner with Reset */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-forest-50 border border-forest-200 rounded-xl px-3.5 py-2.5 text-xs">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-forest-950">Active Period:</span>
+          <span className="font-bold text-forest-950">Selected Period:</span>
           <span className="font-mono font-black text-forest-900">
             {formatDateFull(startDate)} – {formatDateFull(endDate)}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono font-bold bg-forest-800 text-gold-300 px-2 py-0.5 rounded text-[11px]">
+          <span className="font-mono font-bold bg-forest-800 text-gold-300 px-2.5 py-0.5 rounded text-[11px]">
             {currentDays} {currentDays === 1 ? 'Day' : 'Days'} Total
           </span>
           {(startDate !== today || endDate !== today) && (
             <button
               type="button"
               onClick={() => handlePreset('today')}
-              className="text-[11px] text-forest-800 hover:text-forest-950 underline font-semibold cursor-pointer"
+              className="text-[11px] text-forest-800 hover:text-forest-950 underline font-bold cursor-pointer"
             >
-              Reset
+              Reset to Today
             </button>
           )}
         </div>

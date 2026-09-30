@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ResponsiveModal } from '../ui/ResponsiveModal';
 import { CustomCalendarPicker } from '../ui/CustomCalendarPicker';
-import { formatCurrency, formatDate, formatDateFull, todayAsInputDate } from '../../utils/format';
+import { formatCurrency, formatDate, formatDateFull, todayAsInputDate, toInputDate } from '../../utils/format';
 import type { Customer, Transaction } from '../../types';
 
 interface GenerateBillPeriodModalProps {
@@ -18,7 +18,7 @@ type PeriodPreset = 'today' | '7days' | '15days' | '30days' | 'month' | 'custom'
 function getNDaysAgoDate(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - (days - 1));
-  return d.toISOString().split('T')[0];
+  return toInputDate(d);
 }
 
 function getStartOfMonthDate(): string {

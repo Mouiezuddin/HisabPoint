@@ -5,7 +5,7 @@ import { invoiceService } from '../../services/invoice.service';
 import { customerService } from '../../services/customer.service';
 import { ledgerService } from '../../services/ledger.service';
 import { authService } from '../../services/auth.service';
-import { todayAsInputDate, formatCurrency, formatDate, formatDateFull, getErrorMessage } from '../../utils/format';
+import { todayAsInputDate, toInputDate, formatCurrency, formatDate, formatDateFull, getErrorMessage } from '../../utils/format';
 import { showToast } from '../../components/ui/Toast';
 import { ResponsiveModal } from '../../components/ui/ResponsiveModal';
 import { PrintInvoiceView } from '../../components/billing/PrintInvoiceView';
@@ -26,7 +26,7 @@ function newItemRow(): ItemRow {
 function getNDaysAgoDate(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - (days - 1));
-  return d.toISOString().split('T')[0];
+  return toInputDate(d);
 }
 
 function getStartOfMonthDate(): string {
@@ -213,6 +213,30 @@ export function CreateInvoicePage() {
       });
     }
   }, [matchingCredits]);
+
+  const [autoSyncPeriodItems, setAutoSyncPeriodItems] = useState(true);
+
+  // Auto-sync items whenever period changes if autoSync is enabled
+  useEffect(() => {
+    if (billingPeriodEnabled && autoSyncPeriodItems && customerMode === 'existing' && selectedCustomerId) {
+      if (matchingCredits.length > 0) {
+        const chosen = matchingCredits.filter((t) => selectedPeriodTxnIds[t.id] !== false);
+        if (chosen.length > 0) {
+          const newItems: ItemRow[] = chosen.map((txn) => ({
+            _key: crypto.randomUUID(),
+            name: txn.description || 'Credit Entry',
+            quantity: null,
+            unit: '',
+            unit_price: null,
+            amount: parseFloat(txn.amount) || 0,
+          }));
+          setItems(newItems);
+          setPaymentMode('credit');
+          setNotes((prev) => prev || `Bill for ${periodDaysCount} days (${formatDate(billingPeriodStart)} to ${formatDate(billingPeriodEnd)})`);
+        }
+      }
+    }
+  }, [billingPeriodEnabled, autoSyncPeriodItems, customerMode, selectedCustomerId, matchingCredits, selectedPeriodTxnIds, periodDaysCount, billingPeriodStart, billingPeriodEnd]);
 
   // Auto-load period items if navigated with urlFromDate and urlToDate
   useEffect(() => {
@@ -665,13 +689,24 @@ export function CreateInvoicePage() {
               {/* Customer Khata Entries in this Period */}
               {customerMode === 'existing' && selectedCustomerId && (
                 <div className="space-y-2.5 pt-1">
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                     <span className="font-bold text-stone-700">
                       Khata Entries in these {periodDaysCount} Days:
                     </span>
-                    <span className="font-mono font-black text-rose-800">
-                      {matchingCredits.length} {matchingCredits.length === 1 ? 'Entry' : 'Entries'} • {formatCurrency(totalPeriodCredit)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer bg-forest-50 px-2.5 py-1 rounded-lg border border-forest-200 text-[11px] font-bold text-forest-900">
+                        <input
+                          type="checkbox"
+                          checked={autoSyncPeriodItems}
+                          onChange={(e) => setAutoSyncPeriodItems(e.target.checked)}
+                          className="rounded text-forest-800 focus:ring-forest-700"
+                        />
+                        <span>Auto-fill Bill Items</span>
+                      </label>
+                      <span className="font-mono font-black text-rose-800">
+                        {matchingCredits.length} {matchingCredits.length === 1 ? 'Entry' : 'Entries'} • {formatCurrency(totalPeriodCredit)}
+                      </span>
+                    </div>
                   </div>
 
                   {matchingCredits.length > 0 ? (
