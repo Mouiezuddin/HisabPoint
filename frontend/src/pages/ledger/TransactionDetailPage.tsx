@@ -145,7 +145,7 @@ export function TransactionDetailPage() {
             </p>
           </div>
           <button
-            onClick={() => navigate(`/invoices/new?customer=${txn.customer}&transaction=${txn.id}`)}
+            onClick={() => navigate(`/invoices/new?customer=${txn.customer}&transaction=${txn.id}&date=${txn.transaction_date}`)}
             className="w-full btn-forest text-white py-3 text-xs font-black rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             id="btn-generate-bill-from-txn"
           >

@@ -44,6 +44,7 @@ export function CreateInvoicePage() {
   const preselectedTxnId = searchParams.get('transaction') || '';
   const urlFromDate = searchParams.get('from') || '';
   const urlToDate = searchParams.get('to') || '';
+  const urlDate = searchParams.get('date') || '';
 
   // Customer selection state
   const [customerMode, setCustomerMode] = useState<'existing' | 'walkin'>(
@@ -55,8 +56,19 @@ export function CreateInvoicePage() {
   const [walkinName, setWalkinName] = useState('');
   const [walkinPhone, setWalkinPhone] = useState('');
 
-  // Invoice metadata
-  const [invoiceDate, setInvoiceDate] = useState(todayAsInputDate());
+  // Bill Date & Period state (Always powered by CustomCalendarPicker)
+  const [billDateMode, setBillDateMode] = useState<'single' | 'range'>(
+    urlFromDate && urlToDate ? 'range' : 'single'
+  );
+  const [billingPeriodStart, setBillingPeriodStart] = useState<string>(
+    urlFromDate || urlDate || todayAsInputDate()
+  );
+  const [billingPeriodEnd, setBillingPeriodEnd] = useState<string>(
+    urlToDate || urlDate || todayAsInputDate()
+  );
+  const [invoiceDate, setInvoiceDate] = useState<string>(
+    urlToDate || urlDate || todayAsInputDate()
+  );
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash');
   const [paidAmount, setPaidAmount] = useState('');
 
@@ -75,24 +87,18 @@ export function CreateInvoicePage() {
   // Preview modal state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  // Billing Period & Days state
-  const [billingPeriodEnabled, setBillingPeriodEnabled] = useState(Boolean(urlFromDate && urlToDate));
-  const [billingPeriodPreset, setBillingPeriodPreset] = useState<'today' | '7days' | '15days' | '30days' | 'month' | 'custom'>(
-    urlFromDate && urlToDate ? 'custom' : '7days'
-  );
-  const [billingPeriodStart, setBillingPeriodStart] = useState<string>(urlFromDate || getNDaysAgoDate(7));
-  const [billingPeriodEnd, setBillingPeriodEnd] = useState<string>(urlToDate || todayAsInputDate());
   const [selectedPeriodTxnIds, setSelectedPeriodTxnIds] = useState<Record<string, boolean>>({});
   const [hasAutoLoadedPeriod, setHasAutoLoadedPeriod] = useState(false);
 
   const periodDaysCount = useMemo(() => {
+    if (billDateMode === 'single') return 1;
     if (!billingPeriodStart || !billingPeriodEnd) return 1;
     const start = new Date(billingPeriodStart + 'T00:00:00').getTime();
     const end = new Date(billingPeriodEnd + 'T00:00:00').getTime();
     if (isNaN(start) || isNaN(end)) return 1;
     const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
     return Math.max(1, diffDays);
-  }, [billingPeriodStart, billingPeriodEnd]);
+  }, [billDateMode, billingPeriodStart, billingPeriodEnd]);
 
   // Fetch customers for selection
   const { data: customers } = useQuery({
@@ -129,6 +135,9 @@ export function CreateInvoicePage() {
       }
       if (prefilledTxn.transaction_date) {
         setInvoiceDate(prefilledTxn.transaction_date);
+        setBillingPeriodStart(prefilledTxn.transaction_date);
+        setBillingPeriodEnd(prefilledTxn.transaction_date);
+        setBillDateMode('single');
       }
       setPaymentMode('credit');
       const amt = parseFloat(prefilledTxn.amount) || 0;
@@ -218,7 +227,7 @@ export function CreateInvoicePage() {
 
   // Auto-sync items whenever period changes if autoSync is enabled
   useEffect(() => {
-    if (billingPeriodEnabled && autoSyncPeriodItems && customerMode === 'existing' && selectedCustomerId) {
+    if (billDateMode === 'range' && autoSyncPeriodItems && customerMode === 'existing' && selectedCustomerId) {
       if (matchingCredits.length > 0) {
         const chosen = matchingCredits.filter((t) => selectedPeriodTxnIds[t.id] !== false);
         if (chosen.length > 0) {
@@ -236,7 +245,7 @@ export function CreateInvoicePage() {
         }
       }
     }
-  }, [billingPeriodEnabled, autoSyncPeriodItems, customerMode, selectedCustomerId, matchingCredits, selectedPeriodTxnIds, periodDaysCount, billingPeriodStart, billingPeriodEnd]);
+  }, [billDateMode, autoSyncPeriodItems, customerMode, selectedCustomerId, matchingCredits, selectedPeriodTxnIds, periodDaysCount, billingPeriodStart, billingPeriodEnd]);
 
   // Auto-load period items if navigated with urlFromDate and urlToDate
   useEffect(() => {
@@ -251,33 +260,11 @@ export function CreateInvoicePage() {
       }));
       setItems(newItems);
       setPaymentMode('credit');
-      setBillingPeriodEnabled(true);
+      setBillDateMode('range');
       setNotes((prev) => prev || `Bill for ${periodDaysCount} days (${formatDate(urlFromDate)} to ${formatDate(urlToDate)})`);
       setHasAutoLoadedPeriod(true);
     }
   }, [urlFromDate, urlToDate, customerTxns, hasAutoLoadedPeriod, matchingCredits, periodDaysCount]);
-
-  const handleSelectPeriodPreset = (preset: 'today' | '7days' | '15days' | '30days' | 'month' | 'custom') => {
-    setBillingPeriodPreset(preset);
-    setBillingPeriodEnabled(true);
-    const today = todayAsInputDate();
-    if (preset === 'today') {
-      setBillingPeriodStart(today);
-      setBillingPeriodEnd(today);
-    } else if (preset === '7days') {
-      setBillingPeriodStart(getNDaysAgoDate(7));
-      setBillingPeriodEnd(today);
-    } else if (preset === '15days') {
-      setBillingPeriodStart(getNDaysAgoDate(15));
-      setBillingPeriodEnd(today);
-    } else if (preset === '30days') {
-      setBillingPeriodStart(getNDaysAgoDate(30));
-      setBillingPeriodEnd(today);
-    } else if (preset === 'month') {
-      setBillingPeriodStart(getStartOfMonthDate());
-      setBillingPeriodEnd(today);
-    }
-  };
 
   const handleLoadSelectedEntries = () => {
     const chosen = matchingCredits.filter((t) => selectedPeriodTxnIds[t.id] !== false);
@@ -417,8 +404,8 @@ export function CreateInvoicePage() {
           : walkinPhone,
       invoice_date: invoiceDate,
       due_date: null,
-      billing_period_start: billingPeriodEnabled && billingPeriodStart ? billingPeriodStart : null,
-      billing_period_end: billingPeriodEnabled && billingPeriodEnd ? billingPeriodEnd : null,
+      billing_period_start: billDateMode === 'range' && billingPeriodStart ? billingPeriodStart : null,
+      billing_period_end: billDateMode === 'range' && billingPeriodEnd ? billingPeriodEnd : null,
       payment_mode: paymentMode,
       discount_type: discountType,
       discount_value: parseFloat(discountValue) || 0,
@@ -459,9 +446,9 @@ export function CreateInvoicePage() {
       invoice_number: nextNumber || 'RP-000001',
       invoice_date: invoiceDate,
       due_date: null,
-      billing_period_start: billingPeriodEnabled && billingPeriodStart ? billingPeriodStart : null,
-      billing_period_end: billingPeriodEnabled && billingPeriodEnd ? billingPeriodEnd : null,
-      billing_period_days: billingPeriodEnabled && billingPeriodStart && billingPeriodEnd ? periodDaysCount : null,
+      billing_period_start: billDateMode === 'range' && billingPeriodStart ? billingPeriodStart : null,
+      billing_period_end: billDateMode === 'range' && billingPeriodEnd ? billingPeriodEnd : null,
+      billing_period_days: billDateMode === 'range' && billingPeriodStart && billingPeriodEnd ? periodDaysCount : null,
       payment_status: status,
       payment_mode: paymentMode,
       subtotal: subtotal.toFixed(2),
@@ -493,7 +480,7 @@ export function CreateInvoicePage() {
     paidNum, totalAmount, nextNumber, invoiceDate, paymentMode,
     subtotal, discountType, discountValue, discountAmount,
     enableTax, taxRate, taxAmount, balanceDue, notes, preselectedTxnId,
-    selectedCustomerId, billingPeriodEnabled, billingPeriodStart, billingPeriodEnd,
+    selectedCustomerId, billDateMode, billingPeriodStart, billingPeriodEnd,
     periodDaysCount,
   ]);
 
@@ -651,148 +638,137 @@ export function CreateInvoicePage() {
           )}
         </div>
 
-        {/* Billing Period & Days (Import Khata Entries) */}
+        {/* Bill Date & Period (Interactive Custom Calendar) */}
         <div className="bg-parchment-50 rounded-2xl p-5 border-2 border-parchment-300 shadow-md space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-bold text-stone-700 uppercase tracking-wider font-serif flex items-center gap-2">
                 <span>📅</span>
-                <span>Billing Period & Days</span>
+                <span>Bill Date & Period</span>
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Choose how many days this bill covers and optionally import Khata entries.
+                Choose a single bill date or a multi-day Khata period using the interactive calendar.
               </p>
             </div>
-            <label className="inline-flex items-center gap-2 cursor-pointer bg-parchment-200 hover:bg-parchment-300 px-3 py-1.5 rounded-xl border border-parchment-300 text-xs font-bold text-stone-800 self-start sm:self-auto transition-colors">
-              <input
-                type="checkbox"
-                checked={billingPeriodEnabled}
-                onChange={(e) => setBillingPeriodEnabled(e.target.checked)}
-                className="rounded text-forest-800 focus:ring-forest-700"
-              />
-              <span>Include Bill Period</span>
-            </label>
           </div>
 
-          {billingPeriodEnabled && (
-            <div className="space-y-4 pt-2 border-t border-parchment-200">
-              {/* Custom Interactive Calendar Picker (Visual Month Grid, Days Stepper & Quick Opinion Presets) */}
-              <CustomCalendarPicker
-                startDate={billingPeriodStart}
-                endDate={billingPeriodEnd}
-                onChange={(start, end) => {
-                  setBillingPeriodStart(start);
-                  setBillingPeriodEnd(end);
-                }}
-              />
+          {/* Custom Interactive Calendar Picker (Always Visible with Mode Toggle) */}
+          <CustomCalendarPicker
+            startDate={billingPeriodStart}
+            endDate={billingPeriodEnd}
+            mode={billDateMode}
+            showModeToggle={true}
+            title="Bill Date & Period Selection"
+            onModeChange={(m) => {
+              setBillDateMode(m);
+              if (m === 'single') {
+                setInvoiceDate(billingPeriodEnd || todayAsInputDate());
+              } else {
+                setInvoiceDate(billingPeriodEnd || todayAsInputDate());
+              }
+            }}
+            onChange={(start, end) => {
+              setBillingPeriodStart(start);
+              setBillingPeriodEnd(end);
+              setInvoiceDate(end);
+            }}
+          />
 
-              {/* Customer Khata Entries in this Period */}
-              {customerMode === 'existing' && selectedCustomerId && (
-                <div className="space-y-2.5 pt-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <span className="font-bold text-stone-700">
-                      Khata Entries in these {periodDaysCount} Days:
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <label className="inline-flex items-center gap-1.5 cursor-pointer bg-forest-50 px-2.5 py-1 rounded-lg border border-forest-200 text-[11px] font-bold text-forest-900">
-                        <input
-                          type="checkbox"
-                          checked={autoSyncPeriodItems}
-                          onChange={(e) => setAutoSyncPeriodItems(e.target.checked)}
-                          className="rounded text-forest-800 focus:ring-forest-700"
-                        />
-                        <span>Auto-fill Bill Items</span>
-                      </label>
-                      <span className="font-mono font-black text-rose-800">
-                        {matchingCredits.length} {matchingCredits.length === 1 ? 'Entry' : 'Entries'} • {formatCurrency(totalPeriodCredit)}
-                      </span>
-                    </div>
+          {/* Customer Khata Entries in this Period (Visible if customer selected and in range mode) */}
+          {customerMode === 'existing' && selectedCustomerId && billDateMode === 'range' && (
+            <div className="space-y-2.5 pt-2 border-t border-parchment-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-stone-700">
+                  Khata Entries in these {periodDaysCount} Days:
+                </span>
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer bg-forest-50 px-2.5 py-1 rounded-lg border border-forest-200 text-[11px] font-bold text-forest-900">
+                    <input
+                      type="checkbox"
+                      checked={autoSyncPeriodItems}
+                      onChange={(e) => setAutoSyncPeriodItems(e.target.checked)}
+                      className="rounded text-forest-800 focus:ring-forest-700"
+                    />
+                    <span>Auto-fill Bill Items</span>
+                  </label>
+                  <span className="font-mono font-black text-rose-800">
+                    {matchingCredits.length} {matchingCredits.length === 1 ? 'Entry' : 'Entries'} • {formatCurrency(totalPeriodCredit)}
+                  </span>
+                </div>
+              </div>
+
+              {matchingCredits.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="max-h-44 overflow-y-auto space-y-1 border border-parchment-300 rounded-xl p-2 bg-white">
+                    {matchingCredits.map((txn) => {
+                      const isChecked = selectedPeriodTxnIds[txn.id] !== false;
+                      return (
+                        <label
+                          key={txn.id}
+                          className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg hover:bg-stone-50 cursor-pointer border border-transparent hover:border-stone-200"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) =>
+                                setSelectedPeriodTxnIds((prev) => ({
+                                  ...prev,
+                                  [txn.id]: e.target.checked,
+                                }))
+                              }
+                              className="rounded text-forest-800 focus:ring-forest-700"
+                            />
+                            <span className="text-[10px] font-mono text-stone-500">
+                              {formatDate(txn.transaction_date)}
+                            </span>
+                            <span className="font-medium text-stone-900">
+                              {txn.description || 'Credit Entry'}
+                            </span>
+                          </div>
+                          <span className="font-mono font-bold text-rose-800">
+                            {formatCurrency(txn.amount)}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
 
-                  {matchingCredits.length > 0 ? (
-                    <div className="space-y-2">
-                      <div className="max-h-44 overflow-y-auto space-y-1 border border-parchment-300 rounded-xl p-2 bg-white">
-                        {matchingCredits.map((txn) => {
-                          const isChecked = selectedPeriodTxnIds[txn.id] !== false;
-                          return (
-                            <label
-                              key={txn.id}
-                              className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg hover:bg-stone-50 cursor-pointer border border-transparent hover:border-stone-200"
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={(e) =>
-                                    setSelectedPeriodTxnIds((prev) => ({
-                                      ...prev,
-                                      [txn.id]: e.target.checked,
-                                    }))
-                                  }
-                                  className="rounded text-forest-800 focus:ring-forest-700"
-                                />
-                                <span className="text-[10px] font-mono text-stone-500">
-                                  {formatDate(txn.transaction_date)}
-                                </span>
-                                <span className="font-medium text-stone-900">
-                                  {txn.description || 'Credit Entry'}
-                                </span>
-                              </div>
-                              <span className="font-mono font-bold text-rose-800">
-                                {formatCurrency(txn.amount)}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={handleLoadSelectedEntries}
-                          className="bg-forest-800 hover:bg-forest-900 text-white text-xs font-black py-2 px-3.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
-                        >
-                          <span>📥</span>
-                          <span>Populate Selected Entries into Bill Table</span>
-                        </button>
-                        {totalPaymentsInPeriod > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPaidAmount(String(totalPaymentsInPeriod));
-                              showToast(`Set Paid Amount to ₹${totalPaymentsInPeriod}`, 'info');
-                            }}
-                            className="text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors"
-                          >
-                            💰 Apply {formatCurrency(totalPaymentsInPeriod)} Paid in Period
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-3 rounded-xl bg-parchment-100/60 border border-parchment-300 text-center text-xs text-stone-500">
-                      No credit transactions in Khata between these dates. You can enter items manually below.
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={handleLoadSelectedEntries}
+                      className="bg-forest-800 hover:bg-forest-900 text-white text-xs font-black py-2 px-3.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
+                    >
+                      <span>📥</span>
+                      <span>Populate Selected Entries into Bill Table</span>
+                    </button>
+                    {totalPaymentsInPeriod > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaidAmount(String(totalPaymentsInPeriod));
+                          showToast(`Set Paid Amount to ₹${totalPaymentsInPeriod}`, 'info');
+                        }}
+                        className="text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors"
+                      >
+                        💰 Apply {formatCurrency(totalPaymentsInPeriod)} Paid in Period
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-parchment-100/60 border border-parchment-300 text-center text-xs text-stone-500">
+                  No credit transactions in Khata between these dates. You can enter items manually below.
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Invoice Date & Payment Mode */}
+        {/* Payment Details & Issue Date Badge */}
         <div className="bg-parchment-50 rounded-2xl p-5 border-2 border-parchment-300 shadow-md">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-stone-600 mb-1 font-serif uppercase">Bill Date</label>
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border-2 border-parchment-300 bg-white text-sm font-medium focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-200"
-                required
-              />
-            </div>
             <div>
               <label className="block text-[11px] font-bold text-stone-600 mb-1 font-serif uppercase">Payment Mode</label>
               <select
@@ -806,6 +782,21 @@ export function CreateInvoicePage() {
                 <option value="card">💳 Card</option>
                 <option value="other">📦 Other</option>
               </select>
+            </div>
+            <div className="flex flex-col justify-end">
+              <div className="bg-white p-2.5 rounded-xl border border-parchment-300 shadow-2xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider font-serif">
+                    Bill Issue Date
+                  </span>
+                  <p className="text-xs font-bold text-forest-950 font-mono">
+                    {formatDateFull(invoiceDate)}
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-forest-800 text-gold-300 px-2 py-0.5 rounded">
+                  {billDateMode === 'range' ? `${periodDaysCount} Days Bill` : 'Single Day'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

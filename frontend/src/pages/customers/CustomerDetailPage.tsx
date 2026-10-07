@@ -376,7 +376,7 @@ export function CustomerDetailPage() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/invoices/new?customer=${customer.id}&transaction=${t.id}`);
+                                  navigate(`/invoices/new?customer=${customer.id}&transaction=${t.id}&date=${t.transaction_date}`);
                                 }}
                                 className="px-2 py-1 text-forest-900 bg-forest-50 hover:bg-forest-100 rounded-lg transition-colors text-[11px] font-bold border border-forest-200 flex items-center gap-0.5"
                                 title="Generate Bill for this credit entry"
@@ -448,7 +448,7 @@ export function CustomerDetailPage() {
                               {isCredit && (
                                 <button
                                   type="button"
-                                  onClick={() => navigate(`/invoices/new?customer=${customer.id}&transaction=${t.id}`)}
+                                  onClick={() => navigate(`/invoices/new?customer=${customer.id}&transaction=${t.id}&date=${t.transaction_date}`)}
                                   className="px-2 py-1 text-forest-900 bg-forest-50 hover:bg-forest-100 rounded-lg transition-colors text-xs font-bold border border-forest-200 flex items-center gap-1"
                                   title="Generate Bill for this credit entry"
                                 >
