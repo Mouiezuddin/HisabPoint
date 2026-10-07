@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ResponsiveModal } from './ResponsiveModal';
 import { showToast } from './Toast';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, formatDateFull, todayAsInputDate } from '../../utils/format';
 import { printKhataStatementDirect } from '../../utils/printStatement';
+import { CustomCalendarPicker } from './CustomCalendarPicker';
 import type { Customer, Transaction, BusinessProfile } from '../../types';
 
 // Number to words for Indian numbering system
@@ -28,7 +29,7 @@ function numberToWords(num: number): string {
   return result + ' Only';
 }
 
-type RangeOption = 'all' | 'last5' | 'last10' | 'month';
+type RangeOption = 'all' | 'last5' | 'last10' | 'month' | 'custom';
 
 interface SendTransactionBillModalProps {
   isOpen: boolean;
@@ -49,6 +50,15 @@ export function SendTransactionBillModal({
 }: SendTransactionBillModalProps) {
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'print'>('whatsapp');
   const [range, setRange] = useState<RangeOption>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
+  const [customEndDate, setCustomEndDate] = useState<string>(todayAsInputDate());
   const [customMessage, setCustomMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -67,8 +77,20 @@ export function SendTransactionBillModal({
       const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       return valid.filter((t) => t.transaction_date.startsWith(currentMonth));
     }
+    if (range === 'custom') {
+      return valid.filter(
+        (t) => t.transaction_date >= customStartDate && t.transaction_date <= customEndDate
+      );
+    }
     return valid;
-  }, [transactions, range]);
+  }, [transactions, range, customStartDate, customEndDate]);
+
+  const customRangeLabel = useMemo(() => {
+    if (range === 'custom') {
+      return `${formatDate(customStartDate)} – ${formatDate(customEndDate)}`;
+    }
+    return '';
+  }, [range, customStartDate, customEndDate]);
 
   // Calculate totals
   const { totalGiven, totalPaid } = useMemo(() => {
@@ -101,7 +123,13 @@ export function SendTransactionBillModal({
     msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `👤 Customer: *${customer.name}*\n`;
     if (customer.phone) msg += `📱 Phone: ${customer.phone}\n`;
-    msg += `📅 Date: ${today}\n`;
+    if (range === 'custom') {
+      msg += `📅 Statement Period: *${formatDateFull(customStartDate)} to ${formatDateFull(customEndDate)}*\n`;
+    } else if (range === 'month') {
+      msg += `📅 Statement Period: *This Month*\n`;
+    } else {
+      msg += `📅 Date: ${today}\n`;
+    }
     msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `*TRANSACTION HISTORY (${filteredTxns.length} entries):*\n`;
 
@@ -129,7 +157,7 @@ export function SendTransactionBillModal({
     msg += `Thank you for your business! 🙏`;
 
     return msg;
-  }, [displayShopName, business, customer, filteredTxns, totalGiven, totalPaid, isDue]);
+  }, [displayShopName, business, customer, filteredTxns, totalGiven, totalPaid, isDue, range, customStartDate, customEndDate]);
 
   // Sync generated message to textarea when parameters change unless user is manually editing
   useEffect(() => {
@@ -175,7 +203,7 @@ export function SendTransactionBillModal({
   }
 
   function handlePrint() {
-    printKhataStatementDirect(customer, filteredTxns, business, range, displayShopName);
+    printKhataStatementDirect(customer, filteredTxns, business, range, displayShopName, customRangeLabel);
   }
 
   if (!isOpen) return null;
@@ -239,6 +267,7 @@ export function SendTransactionBillModal({
                 { key: 'last10', label: 'Last 10' },
                 { key: 'last5', label: 'Last 5' },
                 { key: 'month', label: 'This Month' },
+                { key: 'custom', label: range === 'custom' ? `📅 Calendar (${filteredTxns.length})` : '📅 Calendar' },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -249,7 +278,7 @@ export function SendTransactionBillModal({
                   }}
                   className={`px-3 py-1 rounded-lg border transition-all cursor-pointer ${
                     range === opt.key
-                      ? 'bg-stone-800 text-parchment-100 border-stone-800'
+                      ? 'bg-forest-900 text-gold-300 border-forest-950 shadow-xs'
                       : 'bg-parchment-100 text-stone-700 border-parchment-300 hover:bg-parchment-200'
                   }`}
                 >
@@ -258,6 +287,24 @@ export function SendTransactionBillModal({
               ))}
             </div>
           </div>
+
+          {/* Custom Calendar Picker (Visible when range === 'custom') */}
+          {range === 'custom' && (
+            <div className="pt-1">
+              <CustomCalendarPicker
+                startDate={customStartDate}
+                endDate={customEndDate}
+                mode="range"
+                showModeToggle={true}
+                title="Filter Khata Statement by Custom Dates"
+                onChange={(start, end) => {
+                  setCustomStartDate(start);
+                  setCustomEndDate(end);
+                  setIsEditing(false);
+                }}
+              />
+            </div>
+          )}
 
           {/* TAB 1: WhatsApp Bill */}
           {activeTab === 'whatsapp' && (
@@ -367,7 +414,9 @@ export function SendTransactionBillModal({
                   <div className="text-right">
                     <span className="text-stone-500 font-bold block uppercase text-[9px]">STATEMENT DETAILS</span>
                     <p className="font-bold">
-                      Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {range === 'custom'
+                        ? `Period: ${formatDate(customStartDate)} – ${formatDate(customEndDate)}`
+                        : `Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                     </p>
                     <p className="text-stone-600">Total Entries: {filteredTxns.length}</p>
                   </div>
@@ -466,7 +515,9 @@ export function SendTransactionBillModal({
             <div className="text-right">
               <span className="text-stone-500 font-bold block uppercase text-[10px]">STATEMENT DETAILS</span>
               <p className="font-bold">
-                Date: {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                {range === 'custom'
+                  ? `Period: ${formatDate(customStartDate)} – ${formatDate(customEndDate)}`
+                  : `Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
               </p>
               <p className="text-stone-600">Entries: {filteredTxns.length}</p>
             </div>

@@ -54,7 +54,8 @@ export function generateKhataStatementHtml(
   transactions: Transaction[],
   business?: BusinessProfile | null,
   range: string = 'all',
-  shopNameOverride?: string
+  shopNameOverride?: string,
+  customDateRangeLabel?: string
 ): string {
   const shopName = business?.shop_name?.trim() || shopNameOverride || 'HisabPoint Merchant';
   const balanceNum = parseFloat(customer.balance) || 0;
@@ -72,6 +73,7 @@ export function generateKhataStatementHtml(
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     filteredTxns = validTxns.filter((t) => t.transaction_date.startsWith(currentMonth));
   }
+  // If range === 'custom', filteredTxns is already filtered by caller
 
   let totalGiven = 0;
   let totalPaid = 0;
@@ -81,7 +83,15 @@ export function generateKhataStatementHtml(
     else if (t.type === 'payment') totalPaid += amt;
   });
 
-  const rangeLabel = range === 'last5' ? 'Last 5 Transactions' : range === 'last10' ? 'Last 10 Transactions' : range === 'month' ? 'This Month' : 'Full Account History';
+  const rangeLabel = range === 'last5'
+    ? 'Last 5 Transactions'
+    : range === 'last10'
+    ? 'Last 10 Transactions'
+    : range === 'month'
+    ? 'This Month'
+    : range === 'custom'
+    ? (customDateRangeLabel || 'Custom Date Period')
+    : 'Full Account History';
 
   const rowsHtml = filteredTxns.length === 0 ? `
     <tr>
@@ -741,9 +751,10 @@ export function printKhataStatementDirect(
   transactions: Transaction[],
   business?: BusinessProfile | null,
   range: string = 'all',
-  shopNameOverride?: string
+  shopNameOverride?: string,
+  customDateRangeLabel?: string
 ): void {
-  const html = generateKhataStatementHtml(customer, transactions, business, range, shopNameOverride);
+  const html = generateKhataStatementHtml(customer, transactions, business, range, shopNameOverride, customDateRangeLabel);
 
   // Strategy 1: Open a dedicated printable tab/window.
   // This is the cleanest and most reliable strategy on both Mobile Android/iOS and Desktop.
