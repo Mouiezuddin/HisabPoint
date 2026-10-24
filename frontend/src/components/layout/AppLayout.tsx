@@ -8,6 +8,8 @@ import { useTheme } from '../../features/theme/ThemeContext';
 import { InstallAppBanner } from '../pwa/InstallAppBanner';
 import { PWAUpdateToast } from '../pwa/PWAUpdateToast';
 import { NetworkStatusIndicator } from '../pwa/NetworkStatusIndicator';
+import { useQueryClient } from '@tanstack/react-query';
+import { customerService } from '../../services/customer.service';
 
 // Clean 4-item list designed around the central thumb '+' floating action button
 const mobileNavItemsLeft = [
@@ -57,6 +59,17 @@ const mobileNavItemsRight = [
 ];
 
 export function BottomNav({ onOpenNewEntry }: { onOpenNewEntry: () => void }) {
+  const queryClient = useQueryClient();
+  const handlePrefetch = (path: string) => {
+    if (path === '/customers') {
+      import('../../pages/customers/CustomerListPage');
+      queryClient.prefetchQuery({
+        queryKey: ['customers', ''],
+        queryFn: () => customerService.list(),
+      });
+    }
+  };
+
   return (
     <nav
       className="bottom-nav border-t-2 border-gold-500/60 bg-gradient-to-t from-leather-950 via-leather-900 to-leather-950 md:hidden z-40 shadow-2xl safe-bottom"
@@ -67,6 +80,8 @@ export function BottomNav({ onOpenNewEntry }: { onOpenNewEntry: () => void }) {
         <NavLink
           key={item.to}
           to={item.to}
+          onTouchStart={() => handlePrefetch(item.to)}
+          onMouseEnter={() => handlePrefetch(item.to)}
           className={({ isActive }) =>
             `nav-item font-bold transition-all min-h-[48px] min-w-[48px] ${
               isActive ? 'text-gold-400 font-black scale-105' : 'text-amber-200/60 hover:text-amber-200'
@@ -122,6 +137,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Instant background prefetching & warming
+  React.useEffect(() => {
+    // 1. Preload lazy-loaded route component chunks
+    import('../../pages/customers/CustomerListPage');
+    import('../../pages/billing/InvoiceListPage');
+
+    // 2. Prefetch customer list into React Query memory
+    queryClient.prefetchQuery({
+      queryKey: ['customers', ''],
+      queryFn: () => customerService.list(),
+    });
+
+    // 3. Keep-alive ping directly to /api/health/ to keep Supabase pooler & backend active
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://hisabpoint-c6po.onrender.com';
+    const keepAlive = setInterval(() => {
+      fetch(`${apiUrl}/api/health/`).catch(() => {});
+    }, 4 * 60 * 1000);
+
+    return () => clearInterval(keepAlive);
+  }, [queryClient]);
 
   return (
     <div className="min-h-dvh flex flex-col md:flex-row w-full text-stone-900 selection:bg-gold-500 selection:text-forest-950 bg-wood-desk overflow-x-hidden">

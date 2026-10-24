@@ -96,9 +96,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 1000 * 60 * 5, // 5 minutes fresh data
+      staleTime: 1000 * 30, // 30 seconds fresh data
       gcTime: 1000 * 60 * 60, // 1 hour memory retention
-      refetchOnWindowFocus: false, // Instant zero-lag tab switching
+      refetchOnWindowFocus: true, // Refresh data when returning to tab
       refetchOnReconnect: 'always',
     },
   },

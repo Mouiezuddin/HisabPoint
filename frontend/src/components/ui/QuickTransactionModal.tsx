@@ -41,6 +41,22 @@ export function QuickTransactionModal({
   const [amountError, setAmountError] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
 
+  // Synchronize state whenever the modal opens or props change
+  React.useEffect(() => {
+    if (isOpen) {
+      setSelectedCustomerId(defaultCustomerId || '');
+      setTxnType(defaultType || 'credit');
+      setAmount('');
+      setItemName('');
+      setNotes('');
+      setAmountError('');
+      setDate(todayAsInputDate());
+      setTime(todayAsInputTime());
+    }
+  }, [isOpen, defaultCustomerId, defaultType]);
+
+  const activeCustomerId = defaultCustomerId || selectedCustomerId;
+
   const { data: customers } = useQuery<CustomerListItem[]>({
     queryKey: ['customers', customerSearch],
     queryFn: async () => {
@@ -73,7 +89,7 @@ export function QuickTransactionModal({
     transaction_date: string;
     transaction_time?: string;
   }) => {
-    const customer = customers?.find((c) => c.id === selectedCustomerId);
+    const customer = customers?.find((c) => c.id === activeCustomerId);
     const currentBal = customer ? parseFloat(customer.balance || '0') : 0;
     const delta = data.type === 'credit' ? parseFloat(data.amount) : -parseFloat(data.amount);
     const newBal = (currentBal + delta).toFixed(2);
@@ -93,7 +109,7 @@ export function QuickTransactionModal({
 
     const tempTxn: Transaction = {
       id: tempId,
-      customer: selectedCustomerId,
+      customer: activeCustomerId,
       customer_name: customer?.name || 'Customer',
       type: data.type,
       amount: data.amount,
@@ -119,18 +135,18 @@ export function QuickTransactionModal({
 
     await enqueueSyncItem({
       type: 'CREATE_TRANSACTION',
-      customerId: selectedCustomerId,
+      customerId: activeCustomerId,
       payload: data,
     });
 
-    queryClient.setQueryData<Transaction[]>(['transactions', selectedCustomerId], (old) => {
+    queryClient.setQueryData<Transaction[]>(['transactions', activeCustomerId], (old) => {
       return old ? [tempTxn, ...old] : [tempTxn];
     });
 
     queryClient.setQueryData<CustomerListItem[]>(['customers', ''], (old) => {
       if (!old) return old;
       return old.map((c) =>
-        c.id === selectedCustomerId
+        c.id === activeCustomerId
           ? {
               ...c,
               balance: newBal,
@@ -140,7 +156,7 @@ export function QuickTransactionModal({
       );
     });
 
-    queryClient.invalidateQueries({ queryKey: ['customer', selectedCustomerId] });
+    queryClient.invalidateQueries({ queryKey: ['customer', activeCustomerId] });
     queryClient.invalidateQueries({ queryKey: ['customers'] });
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
@@ -158,11 +174,14 @@ export function QuickTransactionModal({
       transaction_date: string;
       transaction_time?: string;
     }) => {
+      if (!activeCustomerId) {
+        throw new Error('Please select a customer first.');
+      }
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('OFFLINE_RECORD');
       }
       try {
-        const res = await ledgerService.createTransaction(selectedCustomerId, data);
+        const res = await ledgerService.createTransaction(activeCustomerId, data);
         if (res?.transaction) {
           saveTransactionLocal(res.transaction);
         }
@@ -177,9 +196,17 @@ export function QuickTransactionModal({
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['customer', selectedCustomerId] });
+      if (activeCustomerId) {
+        queryClient.invalidateQueries({ queryKey: ['customer', activeCustomerId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      try {
+        localStorage.removeItem('hisab_customers_cache');
+        localStorage.removeItem('hisab_dashboard_cache');
+      } catch {}
       showToast(result.message, 'success');
       resetForm();
       onClose();
@@ -203,7 +230,7 @@ export function QuickTransactionModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedCustomerId) {
+    if (!activeCustomerId) {
       showToast('Please select a customer first.', 'error');
       return;
     }
@@ -232,9 +259,9 @@ export function QuickTransactionModal({
         {/* Customer Select */}
         <div>
           <label className="block text-xs font-bold uppercase text-stone-600 mb-1">SELECT CUSTOMER *</label>
-          {defaultCustomerId && customers ? (
+          {defaultCustomerId ? (
             <div className="p-3 bg-parchment-200 rounded-xl font-bold font-serif text-stone-900 text-sm border border-parchment-300">
-              {customers.find((c) => c.id === defaultCustomerId)?.name || 'Selected Customer'}
+              {customers?.find((c) => c.id === defaultCustomerId)?.name || 'Selected Customer'}
             </div>
           ) : (
             <select

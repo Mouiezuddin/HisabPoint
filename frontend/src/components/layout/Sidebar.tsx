@@ -1,6 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { customerService } from '../../services/customer.service';
 
 interface SidebarProps {
   onOpenNewEntry?: () => void;
@@ -74,6 +76,19 @@ const navItems = [
 export function Sidebar({ onOpenNewEntry }: SidebarProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const handlePrefetch = (path: string) => {
+    if (path === '/customers') {
+      import('../../pages/customers/CustomerListPage');
+      queryClient.prefetchQuery({
+        queryKey: ['customers', ''],
+        queryFn: () => customerService.list(),
+      });
+    } else if (path === '/invoices') {
+      import('../../pages/billing/InvoiceListPage');
+    }
+  };
 
   return (
     <aside className="w-64 bg-gradient-to-b from-forest-950 via-forest-900 to-forest-950 text-amber-100 flex flex-col justify-between flex-shrink-0 border-r-4 border-gold-600/40 shadow-2xl hidden md:flex sticky top-0 h-dvh leather-stitch z-30">
@@ -123,6 +138,7 @@ export function Sidebar({ onOpenNewEntry }: SidebarProps) {
             <NavLink
               key={item.to}
               to={item.to}
+              onMouseEnter={() => handlePrefetch(item.to)}
               className={({ isActive }) =>
                 `flex items-center gap-3.5 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${
                   isActive

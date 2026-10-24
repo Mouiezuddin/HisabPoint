@@ -39,36 +39,9 @@ export function DashboardPage() {
         return undefined;
       }
     },
-    staleTime: 1000 * 60 * 5,
-    refetchInterval: 60_000,
-  });
-
-  const { data: recentTxns } = useQuery<Transaction[] | { results: Transaction[] }>({
-    queryKey: ['recent-transactions'],
-    queryFn: async () => {
-      try {
-        const data = await ledgerService.getAllTransactions(6);
-        try {
-          localStorage.setItem('hisab_recent_txns_cache', JSON.stringify(data));
-        } catch {}
-        return data;
-      } catch (err) {
-        try {
-          const cached = localStorage.getItem('hisab_recent_txns_cache');
-          if (cached) return JSON.parse(cached) as Transaction[];
-        } catch {}
-        throw err;
-      }
-    },
-    initialData: (): Transaction[] | undefined => {
-      try {
-        const cached = localStorage.getItem('hisab_recent_txns_cache');
-        return cached ? (JSON.parse(cached) as Transaction[]) : undefined;
-      } catch {
-        return undefined;
-      }
-    },
-    staleTime: 1000 * 60 * 5,
+    initialDataUpdatedAt: 0,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const greeting = getGreeting();
@@ -82,12 +55,7 @@ export function DashboardPage() {
     c.phone.includes(search)
   ) ?? [];
 
-  const txnsList: Transaction[] | null = Array.isArray(recentTxns)
-    ? (recentTxns as Transaction[])
-    : (Array.isArray((recentTxns as any)?.results) ? ((recentTxns as any).results as Transaction[]) : null);
-  const displayTxns: Transaction[] = (txnsList && txnsList.length > 0)
-    ? txnsList
-    : (dashboard?.recent_transactions ?? []);
+  const displayTxns = (dashboard?.recent_transactions ?? []) as unknown as Transaction[];
 
   return (
     <div className="space-y-6">
@@ -235,20 +203,33 @@ export function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-right">
+                  <div className="flex items-center gap-2 sm:gap-3 text-right">
                     <div>
                       <p className="font-black text-rose-800 font-tabular text-sm">₹{c.balance}</p>
                       <span className="badge-due">Due</span>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setQuickTxnModal({ open: true, customerId: c.id, type: 'credit' });
-                      }}
-                      className="bg-rose-800 hover:bg-rose-900 px-3 py-1.5 text-[11px] font-bold rounded-lg text-white shadow-sm"
-                    >
-                      + Given
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickTxnModal({ open: true, customerId: c.id, type: 'credit' });
+                        }}
+                        className="bg-rose-800 hover:bg-rose-900 px-2.5 py-1.5 text-[11px] font-bold rounded-lg text-white shadow-sm transition-transform active:scale-95"
+                        title="Record Credit Given"
+                      >
+                        + Given
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickTxnModal({ open: true, customerId: c.id, type: 'payment' });
+                        }}
+                        className="bg-emerald-800 hover:bg-emerald-900 px-2.5 py-1.5 text-[11px] font-bold rounded-lg text-white shadow-sm transition-transform active:scale-95"
+                        title="Record Payment Received"
+                      >
+                        Payment
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -310,6 +291,7 @@ export function DashboardPage() {
 
       {/* Quick Transaction Modal */}
       <QuickTransactionModal
+        key={`${quickTxnModal.customerId || 'none'}-${quickTxnModal.type || 'credit'}-${quickTxnModal.open}`}
         isOpen={quickTxnModal.open}
         onClose={() => setQuickTxnModal({ open: false })}
         defaultCustomerId={quickTxnModal.customerId}

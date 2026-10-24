@@ -42,6 +42,7 @@ export function CustomerDetailPage() {
   const { data: business } = useQuery({
     queryKey: ['business-profile'],
     queryFn: authService.getBusinessProfile,
+    staleTime: 1000 * 60 * 30, // 30 minutes cache
   });
 
   const {
@@ -121,9 +122,14 @@ export function CustomerDetailPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['transactions', id] });
       queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['activity'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      try {
+        localStorage.removeItem('hisab_customers_cache');
+        localStorage.removeItem('hisab_dashboard_cache');
+      } catch {}
       showToast(result.message || 'Transaction permanently deleted.', 'success');
       setDeletingTxn(null);
     },
@@ -479,6 +485,7 @@ export function CustomerDetailPage() {
 
       {/* Quick Transaction Modal */}
       <QuickTransactionModal
+        key={`${id}-${quickTxnModal.type || 'credit'}-${quickTxnModal.open}`}
         isOpen={quickTxnModal.open}
         onClose={() => setQuickTxnModal({ open: false })}
         defaultCustomerId={id}

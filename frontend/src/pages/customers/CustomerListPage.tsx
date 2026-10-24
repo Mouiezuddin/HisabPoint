@@ -63,7 +63,10 @@ export function CustomerListPage() {
       }
       return undefined;
     },
-    staleTime: 1000 * 60 * 5,
+    initialDataUpdatedAt: 0, // Immediately treat local cache as stale so queryFn runs on mount
+    placeholderData: (previousData) => previousData,
+    staleTime: 0, // Always fetch fresh balances from the server
+    refetchOnMount: 'always',
   });
 
   const filteredCustomers = data?.filter((c) => {
@@ -327,6 +330,7 @@ export function CustomerListPage() {
 
       {/* Quick Transaction Modal */}
       <QuickTransactionModal
+        key={`${quickTxnModal.customerId || 'none'}-${quickTxnModal.type || 'credit'}-${quickTxnModal.open}`}
         isOpen={quickTxnModal.open}
         onClose={() => setQuickTxnModal({ open: false })}
         defaultCustomerId={quickTxnModal.customerId}
