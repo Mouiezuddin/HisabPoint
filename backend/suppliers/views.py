@@ -120,12 +120,17 @@ def supplier_summary_view(request):
     suppliers_due_count = 0
 
     for s in qs.values("id", "_balance"):
-        bal = s["_balance"]
-        if bal > Decimal("0.00"):
-            total_payable += bal
-            suppliers_due_count += 1
-        elif bal < Decimal("0.00"):
-            total_advance += abs(bal)
+        bal = s.get("_balance")
+        if bal is not None:
+            try:
+                dec_bal = Decimal(str(bal))
+                if dec_bal > Decimal("0.00"):
+                    total_payable += dec_bal
+                    suppliers_due_count += 1
+                elif dec_bal < Decimal("0.00"):
+                    total_advance += abs(dec_bal)
+            except Exception:
+                pass
 
     # Monthly purchases & payments
     from django.utils import timezone

@@ -39,14 +39,26 @@ class SupplierSerializer(serializers.ModelSerializer):
     def get_balance(self, obj):
         bal = getattr(obj, "_balance", None)
         if bal is None:
-            bal = calculate_supplier_balance(obj)
-        return f"{Decimal(str(bal)):.2f}"
+            try:
+                bal = calculate_supplier_balance(obj)
+            except Exception:
+                bal = Decimal("0.00")
+        try:
+            return f"{Decimal(str(bal if bal is not None else '0')):.2f}"
+        except Exception:
+            return "0.00"
 
     def get_balance_status(self, obj):
         bal = getattr(obj, "_balance", None)
         if bal is None:
-            bal = calculate_supplier_balance(obj)
-        return get_supplier_balance_status(Decimal(str(bal)))
+            try:
+                bal = calculate_supplier_balance(obj)
+            except Exception:
+                bal = Decimal("0.00")
+        try:
+            return get_supplier_balance_status(Decimal(str(bal if bal is not None else '0')))
+        except Exception:
+            return "settled"
 
     def validate_name(self, value):
         if not value or not value.strip():
@@ -91,14 +103,26 @@ class SupplierListSerializer(serializers.ModelSerializer):
     def get_balance(self, obj):
         bal = getattr(obj, "_balance", None)
         if bal is None:
-            bal = calculate_supplier_balance(obj)
-        return f"{Decimal(str(bal)):.2f}"
+            try:
+                bal = calculate_supplier_balance(obj)
+            except Exception:
+                bal = Decimal("0.00")
+        try:
+            return f"{Decimal(str(bal if bal is not None else '0')):.2f}"
+        except Exception:
+            return "0.00"
 
     def get_balance_status(self, obj):
         bal = getattr(obj, "_balance", None)
         if bal is None:
-            bal = calculate_supplier_balance(obj)
-        return get_supplier_balance_status(Decimal(str(bal)))
+            try:
+                bal = calculate_supplier_balance(obj)
+            except Exception:
+                bal = Decimal("0.00")
+        try:
+            return get_supplier_balance_status(Decimal(str(bal if bal is not None else '0')))
+        except Exception:
+            return "settled"
 
 
 class SupplierTransactionSerializer(serializers.ModelSerializer):

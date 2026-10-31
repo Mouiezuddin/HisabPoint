@@ -108,7 +108,11 @@ def annotate_supplier_balance(queryset):
     )
 
     return queryset.annotate(
-        _balance=(purchase - rev_purchase) - (payment - rev_payment)
+        _balance=Coalesce(
+            (purchase - rev_purchase) - (payment - rev_payment),
+            zero,
+            output_field=output_field,
+        )
     )
 
 
