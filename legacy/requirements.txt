@@ -1,0 +1,40 @@
+# Django and Django REST Framework
+Django>=4.2,<5.0
+djangorestframework>=3.14,<4.0
+
+# Database (PostgreSQL recommended for production)
+psycopg2-binary>=2.9,<3.0  # For PostgreSQL
+# mysqlclient>=2.1,<3.0  # For MySQL
+# sqlite3  # Built-in with Python
+
+# Additional utilities
+python-decouple>=3.8,<4.0  # Environment variables
+django-cors-headers>=4.0,<5.0  # CORS support
+django-filter>=23.0,<24.0  # Filtering support
+drf-yasg>=1.21,<2.0  # Swagger/OpenAPI documentation
+
+# Development dependencies
+ipython>=8.0,<9.0  # Enhanced Python shell
+django-debug-toolbar>=4.0,<5.0  # Debugging toolbar
+django-extensions>=3.2,<4.0  # Additional Django utilities
+
+# Testing
+pytest>=7.0,<8.0
+pytest-django>=4.5,<5.0
+pytest-cov>=4.0,<5.0
+factory-boy>=3.2,<4.0
+
+# Code quality
+black>=23.0,<24.0
+flake8>=6.0,<7.0
+isort>=5.12,<6.0
+mypy>=1.0,<2.0
+
+# Security
+django-allauth>=0.54,<0.55  # Authentication
+django-rest-auth>=0.9,<1.0  # REST authentication
+djangorestframework-simplejwt>=5.2,<6.0  # JWT authentication
+
+# Date/Time handling
+python-dateutil>=2.8,<3.0
+pytz>=2023.0,<2024.0

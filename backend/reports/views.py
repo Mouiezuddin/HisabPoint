@@ -162,9 +162,32 @@ def dashboard_view(request):
         for txn in recent_txns_qs
     ]
 
+    # Query 6: Supplier Payables metrics ("Total Dena Hai" and Net Balance)
+    total_payable = Decimal("0.00")
+    total_suppliers = 0
+    try:
+        from suppliers.models import Supplier, SupplierStatus
+        from suppliers.services import annotate_supplier_balance
+        supp_qs = annotate_supplier_balance(
+            Supplier.objects.filter(user=user, status=SupplierStatus.ACTIVE)
+        )
+        total_suppliers = supp_qs.count()
+        for s in supp_qs.values("_balance"):
+            bal = s["_balance"]
+            if bal and bal > Decimal("0.00"):
+                total_payable += bal
+    except Exception:
+        total_payable = Decimal("0.00")
+        total_suppliers = 0
+
+    net_balance = total_due - total_payable
+
     return Response(
         {
             "total_due": f"{total_due:.2f}",
+            "total_payable": f"{total_payable:.2f}",
+            "net_balance": f"{net_balance:.2f}",
+            "total_suppliers": total_suppliers,
             "today_given": f"{agg['today_given']:.2f}",
             "today_received": f"{agg['today_received']:.2f}",
             "total_customers": total_customers,

@@ -78,6 +78,23 @@ export function CustomerListPage() {
 
   return (
     <div className="space-y-5">
+      {/* Top Dual-Mode Toggle: Grahak (Customers) vs Vyapari (Suppliers) */}
+      <div className="p-1.5 bg-stone-200/80 rounded-2xl flex items-center justify-between border border-stone-300 max-w-lg mx-auto shadow-inner">
+        <button
+          className="flex-1 py-2 rounded-xl text-xs sm:text-sm font-black bg-stone-900 text-gold-300 shadow-md flex items-center justify-center gap-2"
+        >
+          <span>👤</span>
+          <span>Grahak (Customers • लेना है)</span>
+        </button>
+        <button
+          onClick={() => navigate('/suppliers')}
+          className="flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold text-stone-600 hover:text-stone-900 transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <span>📦</span>
+          <span>Vyapari (Suppliers • देना है)</span>
+        </button>
+      </div>
+
       {/* Header Bar matching Screen 5 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl sm:text-3xl font-black font-serif text-stone-900 tracking-tight">Customers</h1>

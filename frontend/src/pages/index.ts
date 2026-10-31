@@ -1,0 +1,9 @@
+// Central export file for pages
+export { Dashboard } from './Dashboard';
+export { Customers } from './Customers';
+export { CustomerLedger } from './CustomerLedger';
+export { AddCustomer } from './AddCustomer';
+export { AddEntry } from './AddEntry';
+export { RecordPayment } from './RecordPayment';
+export { Login } from './Login';
+export { Register } from './Register';

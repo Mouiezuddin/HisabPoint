@@ -106,7 +106,7 @@ export function getBalanceLabel(status: BalanceStatus): string {
 /**
  * Extract a human-readable error message from an Axios error or generic error.
  */
-export function getErrorMessage(error: unknown): string {
+export function getErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
   if (error && typeof error === 'object') {
     // Check for Axios response errors
     if ('response' in error) {
@@ -135,7 +135,7 @@ export function getErrorMessage(error: unknown): string {
           }
         }
       }
-      return 'Something went wrong. Please try again.';
+      return fallback;
     }
 
     // Check for timeout or aborted connections

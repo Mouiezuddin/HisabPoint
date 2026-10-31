@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../features/auth/AuthContext';
 import { getErrorMessage } from '../../utils/format';
+import { trackLogin } from '../../utils/analytics';
 
 function formatCountdown(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -113,6 +114,7 @@ export function LoginPage() {
         setPreAuthToken(res.pre_auth_token);
         setTwoFaCode('');
       } else {
+        trackLogin('email');
         navigate('/', { replace: true });
       }
     } catch (err: unknown) {
@@ -169,6 +171,7 @@ export function LoginPage() {
     setError('');
     try {
       await verify2FA(preAuthToken, twoFaCode.trim());
+      trackLogin('2fa');
       navigate('/', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));
@@ -194,6 +197,7 @@ export function LoginPage() {
     setError('');
     try {
       await loginWithGoogle(credentialResponse.credential);
+      trackLogin('google');
       localStorage.removeItem('hisab_login_lockout_until');
       setLockoutSeconds(0);
       setRemainingAttempts(null);

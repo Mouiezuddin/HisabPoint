@@ -70,6 +70,9 @@ export interface Transaction {
 
 export interface DashboardData {
   total_due: string;
+  total_payable?: string;
+  net_balance?: string;
+  total_suppliers?: number;
   today_given: string;
   today_received: string;
   total_customers: number;
@@ -132,3 +135,6 @@ export interface CreateTransactionData {
   transaction_date: string;
   transaction_time?: string;
 }
+
+export * from './supplier';
+

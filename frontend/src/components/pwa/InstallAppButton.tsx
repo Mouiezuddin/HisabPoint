@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePWA } from '../../features/pwa/usePWA';
 import { InstallAppModal } from './InstallAppModal';
+import { trackPWAInstalled } from '../../utils/analytics';
 
 interface InstallAppButtonProps {
   className?: string;
@@ -28,6 +29,8 @@ export function InstallAppButton({
       const res = await promptInstall();
       if (res.outcome === 'manual') {
         setModalOpen(true);
+      } else if (res.outcome === 'accepted') {
+        trackPWAInstalled();
       }
     }
   };

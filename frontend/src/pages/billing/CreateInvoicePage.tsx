@@ -7,6 +7,7 @@ import { ledgerService } from '../../services/ledger.service';
 import { authService } from '../../services/auth.service';
 import { todayAsInputDate, toInputDate, formatCurrency, formatDate, formatDateFull, getErrorMessage } from '../../utils/format';
 import { showToast } from '../../components/ui/Toast';
+import { trackInvoiceCreated } from '../../utils/analytics';
 import { ResponsiveModal } from '../../components/ui/ResponsiveModal';
 import { PrintInvoiceView } from '../../components/billing/PrintInvoiceView';
 import { CustomCalendarPicker } from '../../components/ui/CustomCalendarPicker';
@@ -361,6 +362,7 @@ export function CreateInvoicePage() {
         queryClient.invalidateQueries({ queryKey: ['transactions', selectedCustomerId] });
       }
       showToast(data.message || 'Invoice created!', 'success');
+      trackInvoiceCreated();
       navigate(`/invoices/${data.invoice.id}`);
     },
     onError: (err) => showToast(getErrorMessage(err), 'error'),

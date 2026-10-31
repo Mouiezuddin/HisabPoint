@@ -32,6 +32,7 @@ urlpatterns = [
     path("api/transactions/", include("ledger.urls")),
     path("api/dashboard/", include("reports.urls")),
     path("api/invoices/", include("billing.urls")),
+    path("api/suppliers/", include("suppliers.urls")),
     # Direct fallback endpoints without /api/ prefix
     path("auth/", include("accounts.urls")),
     path("business/", include("businesses.urls")),
@@ -39,6 +40,7 @@ urlpatterns = [
     path("transactions/", include("ledger.urls")),
     path("dashboard/", include("reports.urls")),
     path("invoices/", include("billing.urls")),
+    path("suppliers/", include("suppliers.urls")),
 ]
 
 

@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerService } from '../../services/customer.service';
 import { showToast } from '../../components/ui/Toast';
 import { getErrorMessage } from '../../utils/format';
+import { trackCustomerAdded } from '../../utils/analytics';
 import {
   saveCustomerLocal,
   enqueueSyncItem,
@@ -60,6 +61,7 @@ export function AddCustomerPage() {
     queryClient.invalidateQueries({ queryKey: ['customers'] });
 
     showToast(`${tempCustomer.name} saved offline. Will sync to cloud when connected.`, 'success');
+    trackCustomerAdded('offline');
     navigate(`/customers/${tempId}`, { replace: true });
   };
 
@@ -82,6 +84,7 @@ export function AddCustomerPage() {
     onSuccess: (customer) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      trackCustomerAdded('add_page');
       showToast(`${customer.name} added successfully.`, 'success');
       navigate(`/customers/${customer.id}`, { replace: true });
     },

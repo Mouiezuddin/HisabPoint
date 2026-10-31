@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../features/auth/AuthContext';
 import { getErrorMessage } from '../../utils/format';
+import { trackSignUp } from '../../utils/analytics';
 
 export function RegisterPage() {
   const { register, loginWithGoogle } = useAuth();
@@ -45,6 +46,7 @@ export function RegisterPage() {
         password: form.password,
         password2: form.password2,
       });
+      trackSignUp('email');
       navigate('/', { replace: true });
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
@@ -74,6 +76,7 @@ export function RegisterPage() {
     setServerError('');
     try {
       await loginWithGoogle(credentialResponse.credential);
+      trackSignUp('google');
       navigate('/', { replace: true });
     } catch (err) {
       setServerError(getErrorMessage(err));

@@ -6,6 +6,7 @@ import { ledgerService } from '../../services/ledger.service';
 import { ResponsiveModal } from './ResponsiveModal';
 import { AmountInput } from './AmountInput';
 import { showToast } from './Toast';
+import { trackTransactionCreated } from '../../utils/analytics';
 import { todayAsInputDate, todayAsInputTime, getErrorMessage } from '../../utils/format';
 import {
   saveCustomersLocal,
@@ -161,6 +162,7 @@ export function QuickTransactionModal({
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
     showToast('Transaction saved offline. Will sync automatically.', 'success');
+    trackTransactionCreated(data.type, 'offline', parseFloat(data.amount));
     resetForm();
     onClose();
   };
@@ -208,6 +210,11 @@ export function QuickTransactionModal({
         localStorage.removeItem('hisab_dashboard_cache');
       } catch {}
       showToast(result.message, 'success');
+      trackTransactionCreated(
+        mutation.variables?.type ?? 'credit',
+        'quick_modal',
+        mutation.variables?.amount ? parseFloat(mutation.variables.amount) : undefined,
+      );
       resetForm();
       onClose();
     },

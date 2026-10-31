@@ -1,0 +1,11 @@
+Say goodbye to fragile paper registers. 📒✨
+
+Meet HisabPoint — the modern digital Bahi Khata built for 30M+ grassroots retail merchants across India.
+
+⚡ Zero-drift atomic double-entry ledger
+📱 Fast, installable cross-platform PWA
+💸 Instant UPI payment requests & automated collection reminders
+🔒 Full data integrity & 2FA security
+
+Try it live: https://hisab-point.vercel.app
+Built by Mouiezuddin

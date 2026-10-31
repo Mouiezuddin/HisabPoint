@@ -4,6 +4,7 @@ import { usePWA } from '../features/pwa/usePWA';
 import { InstallAppModal } from '../components/pwa/InstallAppModal';
 import { ProductHuntBanner } from '../components/ui/ProductHuntBanner';
 import { ProductHuntModal } from '../components/ui/ProductHuntModal';
+import { trackDemoStarted, trackLandingCTA } from '../utils/analytics';
 
 type ModalType = 'how-it-works' | 'features' | 'benefits' | 'pricing' | 'reviews' | 'faq' | null;
 
@@ -144,7 +145,7 @@ export function LandingPage() {
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => { trackLandingCTA('login'); navigate('/login'); }}
               id="hero-btn-login"
               className="px-7 py-4 text-base font-bold text-white bg-[#194a32] hover:bg-[#133c28] rounded-xl shadow-lg transition-all flex items-center gap-2"
             >
@@ -153,7 +154,7 @@ export function LandingPage() {
             </button>
 
             <button
-              onClick={() => navigate('/register')}
+              onClick={() => { trackLandingCTA('register'); navigate('/register'); }}
               id="hero-start-free"
               className="px-6 py-4 text-base font-bold text-[#194a32] bg-[#ece5d5] hover:bg-[#e2d8c3] border border-[#cfc4a6] rounded-xl transition-all flex items-center gap-2 shadow-sm"
             >
@@ -161,7 +162,7 @@ export function LandingPage() {
             </button>
 
             <button
-              onClick={() => navigate('/login?demo=true')}
+              onClick={() => { trackDemoStarted(); trackLandingCTA('demo'); navigate('/login?demo=true'); }}
               id="hero-btn-demo"
               className="px-6 py-4 text-base font-bold text-[#194a32] bg-[#fef3c7] hover:bg-[#fde68a] border border-[#f59e0b]/50 rounded-xl transition-all flex items-center gap-2 shadow-sm"
               title="Test drive with pre-filled demo store data"

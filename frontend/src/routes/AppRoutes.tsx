@@ -29,6 +29,9 @@ const ReportsPage = lazy(() => import('../pages/ReportsPage').then(m => ({ defau
 const InvoiceListPage = lazy(() => import('../pages/billing/InvoiceListPage').then(m => ({ default: m.InvoiceListPage })))
 const CreateInvoicePage = lazy(() => import('../pages/billing/CreateInvoicePage').then(m => ({ default: m.CreateInvoicePage })))
 const InvoiceDetailPage = lazy(() => import('../pages/billing/InvoiceDetailPage').then(m => ({ default: m.InvoiceDetailPage })))
+const SupplierListPage = lazy(() => import('../pages/suppliers/SupplierListPage').then(m => ({ default: m.SupplierListPage })))
+const AddSupplierPage = lazy(() => import('../pages/suppliers/AddSupplierPage').then(m => ({ default: m.AddSupplierPage })))
+const SupplierDetailPage = lazy(() => import('../pages/suppliers/SupplierDetailPage').then(m => ({ default: m.SupplierDetailPage })))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isLoading } = useAuth()
@@ -129,6 +132,21 @@ export function AppRoutes() {
         <Route path="/customers/:id/transaction" element={
           <ProtectedRoute>
             <AppLayout><AddTransactionPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/suppliers" element={
+          <ProtectedRoute>
+            <AppLayout><SupplierListPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/suppliers/new" element={
+          <ProtectedRoute>
+            <AppLayout><AddSupplierPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/suppliers/:id" element={
+          <ProtectedRoute>
+            <AppLayout><SupplierDetailPage /></AppLayout>
           </ProtectedRoute>
         } />
         <Route path="/activity" element={
