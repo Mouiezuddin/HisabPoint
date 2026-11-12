@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agenticresourcediscovery.org/schema/v1/ard.json",
+  "name": "HisabPoint",
+  "description": "Digital Bahi Khata Ledger Engine for grassroots commerce and retail accounting.",
+  "url": "https://hisab-point.vercel.app",
+  "version": "1.0.0",
+  "resources": [
+    {
+      "name": "HisabPoint App",
+      "type": "web",
+      "url": "https://hisab-point.vercel.app"
+    },
+    {
+      "name": "Documentation for LLMs",
+      "type": "documentation",
+      "url": "https://hisab-point.vercel.app/llms.txt"
+    }
+  ]
+}
+

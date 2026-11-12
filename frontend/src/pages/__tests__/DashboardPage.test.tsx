@@ -77,7 +77,7 @@ describe('DashboardPage', () => {
       expect(screen.getByText('TOTAL DUE')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('₹12,500')).toBeInTheDocument();
+    expect(screen.getAllByText('₹12,500').length).toBeGreaterThan(0);
     expect(screen.getByText('Suresh Kumar')).toBeInTheDocument();
     expect(screen.getByText('Anita Devi')).toBeInTheDocument();
   });

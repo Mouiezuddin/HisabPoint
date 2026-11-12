@@ -309,7 +309,7 @@ export function RegisterPage() {
                     <div className="w-full border-t border-[#d8cfbe]" />
                   </div>
                   <div className="relative flex justify-center text-[11px] uppercase">
-                    <span className="bg-[#f7f4ea] px-2 text-[#786f62] font-bold">or continue with</span>
+                    <span className="bg-[#f7f4ea] px-2 text-[#524b42] font-bold">or continue with</span>
                   </div>
                 </div>
 
@@ -348,7 +348,7 @@ export function RegisterPage() {
               <span className="text-xs font-bold text-[#194a32] uppercase tracking-widest font-serif">
                 ✦ WHY SHOPKEEPERS CHOOSE US ✦
               </span>
-              <span className="text-xs text-[#786f62] font-medium">Page 02</span>
+              <span className="text-xs text-[#524b42] font-medium">Page 02</span>
             </div>
 
             <div className="my-auto space-y-4 py-2">

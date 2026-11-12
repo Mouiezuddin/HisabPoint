@@ -481,7 +481,7 @@ export function LoginPage() {
                       <div className="w-full border-t border-[#d8cfbe]" />
                     </div>
                     <div className="relative flex justify-center text-[11px] uppercase">
-                      <span className="bg-[#f7f4ea] px-2 text-[#786f62] font-bold">or continue with</span>
+                      <span className="bg-[#f7f4ea] px-2 text-[#524b42] font-bold">or continue with</span>
                     </div>
                   </div>
 
@@ -512,7 +512,7 @@ export function LoginPage() {
                   Create Shop Account
                 </Link>
               </p>
-              <p className="text-[11px] text-[#786f62]">
+              <p className="text-[11px] text-[#524b42]">
                 <Link to="/terms" className="hover:text-[#194a32] hover:underline font-medium">
                   Terms & Conditions
                 </Link>
@@ -531,7 +531,7 @@ export function LoginPage() {
               <span className="text-xs font-bold text-[#194a32] uppercase tracking-widest font-serif">
                 ✦ DIGITAL BAHI KHATA ✦
               </span>
-              <span className="text-xs text-[#786f62] font-medium">Page 01</span>
+              <span className="text-xs text-[#524b42] font-medium">Page 01</span>
             </div>
 
             {/* Middle Feature Visual Box */}
@@ -543,17 +543,17 @@ export function LoginPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-sm font-serif text-[#1c1815]">Kirana & General Store Khata</h3>
-                    <p className="text-[11px] text-[#786f62] font-medium">100% Safe, Secure & Auto-Synced</p>
+                    <p className="text-[11px] text-[#524b42] font-medium">100% Safe, Secure & Auto-Synced</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-center text-xs pt-1">
                   <div className="bg-[#f7f4ea] p-2 rounded-xl border border-[#e5dec8]">
-                    <p className="text-[10px] text-[#786f62] uppercase font-bold">Total Dues Managed</p>
+                    <p className="text-[10px] text-[#524b42] uppercase font-bold">Total Dues Managed</p>
                     <p className="font-black text-[#b91c1c] text-sm">₹84,500</p>
                   </div>
                   <div className="bg-[#f7f4ea] p-2 rounded-xl border border-[#e5dec8]">
-                    <p className="text-[10px] text-[#786f62] uppercase font-bold">Active Customers</p>
+                    <p className="text-[10px] text-[#524b42] uppercase font-bold">Active Customers</p>
                     <p className="font-black text-[#194a32] text-sm">27 Shops</p>
                   </div>
                 </div>

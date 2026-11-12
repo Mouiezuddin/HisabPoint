@@ -3,20 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VZNMZ3W6VH"></script>
+    <!-- Google tag (gtag.js) - Initialized with deferred download to avoid blocking LCP -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-VZNMZ3W6VH');
+
+      function loadGtag() {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-VZNMZ3W6VH';
+        document.head.appendChild(s);
+      }
+
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(loadGtag);
+      } else {
+        window.addEventListener('load', function() {
+          setTimeout(loadGtag, 1000);
+        });
+      }
     </script>
 
-    <!-- Preconnect to external critical origins -->
+    <!-- Preconnect only to critical origins (max 2) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://hisabpoint.onrender.com" />
     <link rel="dns-prefetch" href="https://hisabpoint.onrender.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 

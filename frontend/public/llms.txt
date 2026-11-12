@@ -1,0 +1,19 @@
+# HisabPoint • Digital Bahi Khata Ledger Engine
+
+> HisabPoint is an autonomous, real-time digital bahi khata ledger engine built for Indian merchants, kirana stores, small businesses, and retail shopkeepers.
+
+HisabPoint simplifies customer and supplier credit management, payment tracking, zero-drift balance calculations, and multi-UPI collection without requiring traditional accounting knowledge.
+
+## Primary Documentation & Links
+- [HisabPoint Web Application](https://hisab-point.vercel.app/): Main portal for merchant accounting and ledger tracking.
+- [Merchant Login](https://hisab-point.vercel.app/login): Access shopkeeper dashboard and records.
+- [Merchant Registration](https://hisab-point.vercel.app/register): Create a free shop account with instant access.
+- [Live Demo](https://hisab-point.vercel.app/login?demo=true): Test-drive HisabPoint with pre-filled sample store data.
+- [Customer Credit & Debit Khata](https://hisab-point.vercel.app/): Track customer dues (Udhaar / Jama) and payment dates.
+- [Supplier Ledger (Payables)](https://hisab-point.vercel.app/): Manage vendor purchases and payments.
+- [Billing & Invoices](https://hisab-point.vercel.app/): Instant digital bills and WhatsApp receipt generation.
+
+## Legal & Compliance
+- [Privacy Policy](https://hisab-point.vercel.app/privacy): Digital Personal Data Protection (DPDP) Act compliance.
+- [Terms & Conditions](https://hisab-point.vercel.app/terms): Terms of service and usage conditions.
+

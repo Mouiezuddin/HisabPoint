@@ -1,9 +1,14 @@
 import React, { Suspense, lazy, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { useAuth } from '../features/auth/AuthContext'
 import { AppLayout } from '../components/layout/AppLayout'
 import { LoadingState } from '../components/ui/LedgerComponents'
 import { SplashScreen } from '../components/ui/SplashScreen'
+
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  '936456474682-ilijsok5msld8s17jdiccrddshfuimu0.apps.googleusercontent.com'
 
 // Lazy-loaded Public Landing & Auth pages
 const LandingPage = lazy(() => import('../pages/LandingPage').then(m => ({ default: m.LandingPage })))
@@ -95,8 +100,20 @@ export function AppRoutes() {
         <Route path="/" element={<RootRoute />} />
 
         {/* Public Auth routes */}
-        <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-        <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+        <Route path="/login" element={
+          <PublicOnlyRoute>
+            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+              <LoginPage />
+            </GoogleOAuthProvider>
+          </PublicOnlyRoute>
+        } />
+        <Route path="/register" element={
+          <PublicOnlyRoute>
+            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+              <RegisterPage />
+            </GoogleOAuthProvider>
+          </PublicOnlyRoute>
+        } />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
 
         {/* Public Legal & DPDP Compliance routes */}

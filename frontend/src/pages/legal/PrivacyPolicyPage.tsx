@@ -20,7 +20,7 @@ export function PrivacyPolicyPage() {
               <span className="text-2xl font-black font-serif text-[#194a32] tracking-tight group-hover:underline">
                 HisabPoint
               </span>
-              <p className="text-[11px] text-[#786f62] font-semibold">Privacy Policy & DPDP Act Compliance</p>
+              <p className="text-[11px] text-[#524b42] font-semibold">Privacy Policy & DPDP Act Compliance</p>
             </div>
           </div>
 
@@ -66,7 +66,7 @@ export function PrivacyPolicyPage() {
           <h1 className="text-3xl sm:text-4xl font-black font-serif text-[#194a32]">
             {lang === 'en' ? 'Privacy Policy & Data Notice' : 'गोपनीयता नीति एवं डेटा सूचना'}
           </h1>
-          <p className="text-xs text-[#786f62]">
+          <p className="text-xs text-[#524b42]">
             {lang === 'en'
               ? 'Last updated: September 2026 • Effective in compliance with Digital Personal Data Protection Act, 2023'
               : 'अंतिम अद्यतन: सितंबर 2026 • डिजिटल व्यक्तिगत डेटा संरक्षण अधिनियम, 2023 के अनुपालन में प्रभावी'}
@@ -338,7 +338,7 @@ export function PrivacyPolicyPage() {
         )}
 
         {/* Footer actions */}
-        <div className="mt-8 pt-6 border-t border-[#d6cbaf] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#786f62]">
+        <div className="mt-8 pt-6 border-t border-[#d6cbaf] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#524b42]">
           <p>© 2026 HisabPoint Technologies. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <button onClick={() => navigate('/terms')} className="hover:text-[#194a32] font-bold underline">

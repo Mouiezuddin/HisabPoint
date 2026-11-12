@@ -19,7 +19,7 @@ export function TermsPage() {
               <span className="text-2xl font-black font-serif text-[#194a32] tracking-tight group-hover:underline">
                 HisabPoint
               </span>
-              <p className="text-[11px] text-[#786f62] font-semibold">Terms of Service & Data Processing Addendum</p>
+              <p className="text-[11px] text-[#524b42] font-semibold">Terms of Service & Data Processing Addendum</p>
             </div>
           </div>
 
@@ -47,7 +47,7 @@ export function TermsPage() {
           <h1 className="text-3xl sm:text-4xl font-black font-serif text-[#194a32]">
             Terms of Service
           </h1>
-          <p className="text-xs text-[#786f62]">
+          <p className="text-xs text-[#524b42]">
             Effective: September 2026 • Governed by laws of India and DPDP Act 2023
           </p>
         </div>
@@ -112,7 +112,7 @@ export function TermsPage() {
         </div>
 
         {/* Footer actions */}
-        <div className="mt-8 pt-6 border-t border-[#d6cbaf] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#786f62]">
+        <div className="mt-8 pt-6 border-t border-[#d6cbaf] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#524b42]">
           <p>© 2026 HisabPoint Technologies. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <button onClick={() => navigate('/privacy')} className="hover:text-[#194a32] font-bold underline">

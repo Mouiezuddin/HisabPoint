@@ -107,7 +107,7 @@ export function ProductHuntModal({ postUrl = 'https://www.producthunt.com/posts/
           </div>
         </div>
 
-        <p className="text-[10px] text-center text-[#786f62] italic">
+        <p className="text-[10px] text-center text-[#524b42] italic">
           No credit card, installation, or registration required for the demo test drive.
         </p>
       </div>

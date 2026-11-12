@@ -48,6 +48,8 @@ export function LandingPage() {
             <img
               src="/logo-mark.webp"
               alt="HisabPoint Logo"
+              width="44"
+              height="44"
               className="w-11 h-11 rounded-xl object-contain shadow-md border border-[#c4b595] bg-[#f7f4ea]"
             />
             <div>
@@ -130,6 +132,8 @@ export function LandingPage() {
         </div>
       </header>
 
+      {/* ── MAIN LANDMARK FOR ACCESSIBILITY ──────────────────────────────── */}
+      <main id="main-content" className="flex-1 w-full">
       {/* ── HERO SECTION ─────────────────────────────────────────────────── */}
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 w-full">
         {/* Title & Subtitle */}
@@ -188,7 +192,7 @@ export function LandingPage() {
               <span className="text-emerald-700 text-base">🛡️</span>
               <div>
                 <p className="font-bold text-[#2b251f]">100% Safe</p>
-                <p className="text-[11px] text-[#786f62] font-normal">Your data is secure</p>
+                <p className="text-[11px] text-[#524b42] font-normal">Your data is secure</p>
               </div>
             </div>
 
@@ -196,7 +200,7 @@ export function LandingPage() {
               <span className="text-amber-700 text-base">⚡</span>
               <div>
                 <p className="font-bold text-[#2b251f]">Super Easy</p>
-                <p className="text-[11px] text-[#786f62] font-normal">No accounting skills needed</p>
+                <p className="text-[11px] text-[#524b42] font-normal">No accounting skills needed</p>
               </div>
             </div>
 
@@ -204,7 +208,7 @@ export function LandingPage() {
               <span className="text-blue-700 text-base">📱</span>
               <div>
                 <p className="font-bold text-[#2b251f]">Works Everywhere</p>
-                <p className="text-[11px] text-[#786f62] font-normal">Mobile, tablet and desktop</p>
+                <p className="text-[11px] text-[#524b42] font-normal">Mobile, tablet and desktop</p>
               </div>
             </div>
           </div>
@@ -224,12 +228,12 @@ export function LandingPage() {
 
               <div className="flex justify-between items-center border-b border-[#ded5be] pb-3 mb-3">
                 <span className="font-bold text-lg text-[#194a32]">Customer Ledger</span>
-                <span className="text-xs text-[#786f62] font-sans font-medium">Page 42</span>
+                <span className="text-xs text-[#524b42] font-sans font-medium">Page 42</span>
               </div>
 
               <table className="w-full text-xs font-sans">
                 <thead>
-                  <tr className="border-b border-[#ded5be] text-[#786f62] text-left">
+                  <tr className="border-b border-[#ded5be] text-[#524b42] text-left">
                     <th className="py-2">Name</th>
                     <th className="py-2 text-right">Due Amount</th>
                   </tr>
@@ -288,8 +292,8 @@ export function LandingPage() {
                 <div className="bg-[#f7f4ea] text-[#2c2825] rounded-xl p-3.5 space-y-3">
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] text-[#665e52] font-semibold">Good evening, Moinuddin 👋</p>
-                      <h3 className="font-bold text-sm text-[#194a32] font-serif">HisabPoint Ledger</h3>
+                      <p className="text-[10px] text-[#524b42] font-semibold">Good evening, Moinuddin 👋</p>
+                      <p className="font-bold text-sm text-[#194a32] font-serif">HisabPoint Ledger</p>
                     </div>
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   </div>
@@ -297,18 +301,18 @@ export function LandingPage() {
                   {/* Summary Metric Cards */}
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="bg-[#ffffff] p-2 rounded-lg border border-[#e5dec8] shadow-sm">
-                      <p className="text-[9px] text-[#786f62] font-bold uppercase">Total Due</p>
+                      <p className="text-[9px] text-[#524b42] font-bold uppercase">Total Due</p>
                       <p className="text-xs font-black text-[#b91c1c]">₹84,500</p>
-                      <p className="text-[8px] text-[#786f62]">27 customers</p>
+                      <p className="text-[8px] text-[#524b42]">27 customers</p>
                     </div>
 
                     <div className="bg-[#ffffff] p-2 rounded-lg border border-[#e5dec8] shadow-sm">
-                      <p className="text-[9px] text-[#786f62] font-bold uppercase">Given Today</p>
+                      <p className="text-[9px] text-[#524b42] font-bold uppercase">Given Today</p>
                       <p className="text-xs font-black text-[#194a32]">₹4,200</p>
                     </div>
 
                     <div className="bg-[#ffffff] p-2 rounded-lg border border-[#e5dec8] shadow-sm">
-                      <p className="text-[9px] text-[#786f62] font-bold uppercase">Received Today</p>
+                      <p className="text-[9px] text-[#524b42] font-bold uppercase">Received Today</p>
                       <p className="text-xs font-black text-emerald-700">₹2,800</p>
                     </div>
                   </div>
@@ -463,11 +467,11 @@ export function LandingPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-center text-[10px]">
                   <div className="bg-white p-2 rounded-xl border border-[#e5dec8]">
-                    <p className="text-[#786f62]">Given Today</p>
+                    <p className="text-[#524b42]">Given Today</p>
                     <p className="font-bold text-[#194a32]">₹4,200</p>
                   </div>
                   <div className="bg-white p-2 rounded-xl border border-[#e5dec8]">
-                    <p className="text-[#786f62]">Received Today</p>
+                    <p className="text-[#524b42]">Received Today</p>
                     <p className="font-bold text-emerald-700">₹2,800</p>
                   </div>
                 </div>
@@ -477,7 +481,7 @@ export function LandingPage() {
                   <div className="bg-white p-2 rounded-xl border border-[#e5dec8] flex justify-between items-center text-[10px]">
                     <div>
                       <p className="font-bold">Aamir Khan</p>
-                      <p className="text-[8px] text-[#786f62]">Payment</p>
+                      <p className="text-[8px] text-[#524b42]">Payment</p>
                     </div>
                     <span className="font-bold text-emerald-700">₹500</span>
                   </div>
@@ -485,7 +489,7 @@ export function LandingPage() {
                   <div className="bg-white p-2 rounded-xl border border-[#e5dec8] flex justify-between items-center text-[10px]">
                     <div>
                       <p className="font-bold">Rahul Patil</p>
-                      <p className="text-[8px] text-[#786f62]">Given</p>
+                      <p className="text-[8px] text-[#524b42]">Given</p>
                     </div>
                     <span className="font-bold text-[#b91c1c]">₹1,200</span>
                   </div>
@@ -511,48 +515,48 @@ export function LandingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Step 1 */}
           <div className="bg-white p-6 rounded-2xl border border-[#e5dec8] shadow-sm relative space-y-3">
-            <div className="text-3xl font-black font-serif text-[#194a32]/20">01</div>
+            <div className="text-3xl font-black font-serif text-[#194a32]/40" aria-hidden="true">01</div>
             <div className="w-10 h-10 rounded-xl bg-[#194a32] text-white flex items-center justify-center text-lg font-bold">
               👤
             </div>
             <h3 className="font-bold text-lg font-serif text-[#1c1815]">Add Customer</h3>
-            <p className="text-xs text-[#665e52] font-medium leading-relaxed">
+            <p className="text-xs text-[#524b42] font-medium leading-relaxed">
               Save your customer's basic details like name, phone number, and address.
             </p>
           </div>
 
           {/* Step 2 */}
           <div className="bg-white p-6 rounded-2xl border border-[#e5dec8] shadow-sm relative space-y-3">
-            <div className="text-3xl font-black font-serif text-[#194a32]/20">02</div>
+            <div className="text-3xl font-black font-serif text-[#194a32]/40" aria-hidden="true">02</div>
             <div className="w-10 h-10 rounded-xl bg-[#194a32] text-white flex items-center justify-center text-lg font-bold">
               🛍️
             </div>
             <h3 className="font-bold text-lg font-serif text-[#1c1815]">Record Given</h3>
-            <p className="text-xs text-[#665e52] font-medium leading-relaxed">
+            <p className="text-xs text-[#524b42] font-medium leading-relaxed">
               Add items or credit amount given to the customer at the counter.
             </p>
           </div>
 
           {/* Step 3 */}
           <div className="bg-white p-6 rounded-2xl border border-[#e5dec8] shadow-sm relative space-y-3">
-            <div className="text-3xl font-black font-serif text-[#194a32]/20">03</div>
+            <div className="text-3xl font-black font-serif text-[#194a32]/40" aria-hidden="true">03</div>
             <div className="w-10 h-10 rounded-xl bg-[#194a32] text-white flex items-center justify-center text-lg font-bold">
               💵
             </div>
             <h3 className="font-bold text-lg font-serif text-[#1c1815]">Record Payment</h3>
-            <p className="text-xs text-[#665e52] font-medium leading-relaxed">
+            <p className="text-xs text-[#524b42] font-medium leading-relaxed">
               Record any payment received from customer (full or partial).
             </p>
           </div>
 
           {/* Step 4 */}
           <div className="bg-white p-6 rounded-2xl border border-[#e5dec8] shadow-sm relative space-y-3">
-            <div className="text-3xl font-black font-serif text-[#194a32]/20">04</div>
+            <div className="text-3xl font-black font-serif text-[#194a32]/40" aria-hidden="true">04</div>
             <div className="w-10 h-10 rounded-xl bg-[#194a32] text-white flex items-center justify-center text-lg font-bold">
               ✅
             </div>
             <h3 className="font-bold text-lg font-serif text-[#1c1815]">See the Balance</h3>
-            <p className="text-xs text-[#665e52] font-medium leading-relaxed">
+            <p className="text-xs text-[#524b42] font-medium leading-relaxed">
               HisabPoint calculates customer balance automatically in real-time.
             </p>
           </div>
@@ -574,7 +578,7 @@ export function LandingPage() {
 
                 {/* Customer Balance Box */}
                 <div className="bg-white p-4 rounded-2xl border border-[#e5dec8] text-center space-y-1 shadow-sm">
-                  <p className="text-[10px] text-[#786f62] uppercase font-bold">Current Balance</p>
+                  <p className="text-[10px] text-[#524b42] uppercase font-bold">Current Balance</p>
                   <p className="text-2xl font-black text-[#b91c1c] font-serif">₹3,500</p>
                   <span className="inline-block bg-rose-100 text-[#b91c1c] text-[10px] font-bold px-2 py-0.5 rounded">
                     Due
@@ -597,7 +601,7 @@ export function LandingPage() {
                   <div className="bg-white p-2.5 rounded-xl border border-[#e5dec8] flex justify-between items-center">
                     <div>
                       <p className="font-bold text-[11px]">Rice + Oil</p>
-                      <p className="text-[9px] text-[#786f62]">02 Sep</p>
+                      <p className="text-[9px] text-[#524b42]">02 Sep</p>
                     </div>
                     <span className="font-black text-[#b91c1c]">₹1,200</span>
                   </div>
@@ -605,7 +609,7 @@ export function LandingPage() {
                   <div className="bg-white p-2.5 rounded-xl border border-[#e5dec8] flex justify-between items-center">
                     <div>
                       <p className="font-bold text-[11px]">Payment</p>
-                      <p className="text-[9px] text-[#786f62]">01 Sep</p>
+                      <p className="text-[9px] text-[#524b42]">01 Sep</p>
                     </div>
                     <span className="font-black text-emerald-700">₹500</span>
                   </div>
@@ -613,7 +617,7 @@ export function LandingPage() {
                   <div className="bg-white p-2.5 rounded-xl border border-[#e5dec8] flex justify-between items-center">
                     <div>
                       <p className="font-bold text-[11px]">Groceries</p>
-                      <p className="text-[9px] text-[#786f62]">28 Aug</p>
+                      <p className="text-[9px] text-[#524b42]">28 Aug</p>
                     </div>
                     <span className="font-black text-[#b91c1c]">₹900</span>
                   </div>
@@ -718,6 +722,7 @@ export function LandingPage() {
           </button>
         </div>
       </section>
+      </main>
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer className="bg-[#e8e2d2]/60 border-t border-[#dcd3bc] pt-12 pb-8 text-xs font-medium text-[#5c5449]">
@@ -728,42 +733,44 @@ export function LandingPage() {
               <img
                 src="/logo-mark.webp"
                 alt="HisabPoint Logo"
+                width="36"
+                height="36"
                 className="w-9 h-9 rounded-xl object-contain shadow-sm border border-[#c4b595] bg-[#f7f4ea]"
               />
               <span className="text-xl font-black font-serif text-[#194a32]">HisabPoint</span>
             </div>
-            <p className="text-xs text-[#786f62]">Your shop's khata, made digital.</p>
+            <p className="text-xs text-[#524b42]">Your shop's khata, made digital.</p>
           </div>
 
           {/* Product Links */}
           <div className="space-y-2">
             <p className="font-bold text-[#1c1815] uppercase tracking-wider text-[11px]">Product</p>
-            <ul className="space-y-1.5">
-              <li><button onClick={() => scrollToSection('features')} className="hover:text-[#194a32]">Features</button></li>
-              <li><button onClick={() => scrollToSection('how-it-works')} className="hover:text-[#194a32]">How It Works</button></li>
-              <li><button onClick={() => setActiveModal('pricing')} className="hover:text-[#194a32]">Pricing</button></li>
-              <li><button onClick={() => setActiveModal('features')} className="hover:text-[#194a32]">Updates</button></li>
+            <ul className="space-y-1">
+              <li><button onClick={() => scrollToSection('features')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Features</button></li>
+              <li><button onClick={() => scrollToSection('how-it-works')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">How It Works</button></li>
+              <li><button onClick={() => setActiveModal('pricing')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Pricing</button></li>
+              <li><button onClick={() => setActiveModal('features')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Updates</button></li>
             </ul>
           </div>
 
           {/* Company Links */}
           <div className="space-y-2">
             <p className="font-bold text-[#1c1815] uppercase tracking-wider text-[11px]">Company</p>
-            <ul className="space-y-1.5">
-              <li><button onClick={() => setActiveModal('benefits')} className="hover:text-[#194a32]">About Us</button></li>
-              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32]">Contact Us</button></li>
-              <li><button onClick={() => navigate('/privacy')} className="hover:text-[#194a32]">Privacy Policy (DPDP)</button></li>
-              <li><button onClick={() => navigate('/terms')} className="hover:text-[#194a32]">Terms & Conditions</button></li>
+            <ul className="space-y-1">
+              <li><button onClick={() => setActiveModal('benefits')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">About Us</button></li>
+              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Contact Us</button></li>
+              <li><button onClick={() => navigate('/privacy')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Privacy Policy (DPDP)</button></li>
+              <li><button onClick={() => navigate('/terms')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Terms & Conditions</button></li>
             </ul>
           </div>
 
           {/* Support & Socials */}
           <div className="space-y-2">
             <p className="font-bold text-[#1c1815] uppercase tracking-wider text-[11px]">Support</p>
-            <ul className="space-y-1.5">
-              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32]">Help Center</button></li>
-              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32]">FAQ</button></li>
-              <li><button onClick={() => setActiveModal('how-it-works')} className="hover:text-[#194a32]">Video Tutorials</button></li>
+            <ul className="space-y-1">
+              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Help Center</button></li>
+              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">FAQ</button></li>
+              <li><button onClick={() => setActiveModal('how-it-works')} className="hover:text-[#194a32] py-1.5 min-h-[36px] inline-flex items-center text-left">Video Tutorials</button></li>
             </ul>
             <div className="pt-2 flex items-center gap-3 text-lg text-[#194a32]">
               <span className="cursor-pointer hover:opacity-80">📘</span>
@@ -773,7 +780,7 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcd3bc] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#786f62]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcd3bc] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#524b42]">
           <span>© 2026 HisabPoint. All rights reserved.</span>
           <a
             href="https://www.producthunt.com/posts/hisabpoint"
@@ -817,11 +824,11 @@ export function LandingPage() {
               <div className="space-y-3 text-xs text-[#524b42]">
                 <div className="bg-white p-3.5 rounded-xl border border-[#e5dec8] space-y-1">
                   <p className="font-bold text-[#194a32]">"HisabPoint has made my daily kaam so easy!"</p>
-                  <p className="text-[11px] text-[#786f62]">— Imran Shaikh, Kirana Store Owner</p>
+                  <p className="text-[11px] text-[#524b42]">— Imran Shaikh, Kirana Store Owner</p>
                 </div>
                 <div className="bg-white p-3.5 rounded-xl border border-[#e5dec8] space-y-1">
                   <p className="font-bold text-[#194a32]">"Ab koi hisab miss nahi hota."</p>
-                  <p className="text-[11px] text-[#786f62]">— Ramesh Patil, General Store</p>
+                  <p className="text-[11px] text-[#524b42]">— Ramesh Patil, General Store</p>
                 </div>
               </div>
             )}
