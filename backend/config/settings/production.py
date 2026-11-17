@@ -6,6 +6,15 @@ DEBUG = False
 
 import dj_database_url
 
+# Allowed hosts - support custom domains, Render subdomains (.onrender.com), and localhost
+raw_allowed_hosts = config(
+    "ALLOWED_HOSTS",
+    default="hisabpoint.onrender.com,.onrender.com,localhost,127.0.0.1",
+)
+ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(",") if h.strip()]
+if ".onrender.com" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(".onrender.com")
+
 # PostgreSQL
 db_default_url = (
     f"postgresql://{config('DB_USER', default='neondb_owner')}:{config('DB_PASSWORD', default='')}@"
@@ -20,6 +29,9 @@ DATABASES = {
     )
 }
 
+
+# Reverse proxy SSL header (Required for Render, Heroku, Cloudflare reverse proxy terminating SSL)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Security headers
 SECURE_BROWSER_XSS_FILTER = True

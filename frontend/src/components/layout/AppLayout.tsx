@@ -152,7 +152,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
 
     // 3. Keep-alive ping directly to /api/health/ to keep Supabase pooler & backend active
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://hisabpoint-c6po.onrender.com';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://hisabpoint.onrender.com';
     const keepAlive = setInterval(() => {
       fetch(`${apiUrl}/api/health/`).catch(() => {});
     }, 4 * 60 * 1000);
