@@ -1,13 +1,22 @@
 """Custom JWT Authentication class reading tokens from HttpOnly cookies."""
 from django.conf import settings
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken
 
 
 class CookieJWTAuthentication(JWTAuthentication):
     """
     Extract JWT access token from HttpOnly cookie first,
     falling back to Authorization Bearer header if not found in cookie.
+    Enforces that temporary 2FA challenge tokens cannot access protected resources.
     """
+
+    def get_user(self, validated_token):
+        # Prevent 2FA pre-auth challenge tokens from accessing API endpoints
+        token_type = validated_token.get("token_type")
+        if token_type == "pre_auth" or validated_token.get("2fa_pending"):
+            raise InvalidToken("Two-factor authentication required. This token cannot access API resources.")
+        return super().get_user(validated_token)
 
     def authenticate(self, request):
         header = self.get_header(request)

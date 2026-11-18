@@ -20,7 +20,6 @@ def sentry_debug_error(request: HttpRequest) -> HttpResponse:
 
 
 urlpatterns = [
-    path("sentry-debug/", sentry_debug_error, name="sentry-debug"),
     path("", api_root_view, name="api-root"),
     path("api/health/", health_check_view, name="health-check"),
     path("health/", health_check_view, name="health-check-short"),
@@ -45,4 +44,6 @@ urlpatterns = [
 
 
 if settings.DEBUG:
+    # Restrict debug error route to development environments (HP-SEC-07)
+    urlpatterns.insert(0, path("sentry-debug/", sentry_debug_error, name="sentry-debug"))
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

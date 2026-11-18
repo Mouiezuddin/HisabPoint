@@ -107,6 +107,12 @@ class AuthenticationSecurityTestCase(APITestCase):
         self.assertTrue(login_data.get("2fa_required"))
         pre_auth_token = login_data["pre_auth_token"]
 
+        # Step C2: Ensure pre_auth_token CANNOT access protected resources (HP-SEC-01 Verification)
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {pre_auth_token}")
+        blocked_res: Any = client.get("/api/auth/profile/")
+        self.assertEqual(blocked_res.status_code, status.HTTP_401_UNAUTHORIZED)
+        client.credentials()  # Clear credentials
+
         # Step D: Complete 2FA verification challenge using OTP code
         current_otp = get_totp_token(secret)
         verify_res: Any = client.post(

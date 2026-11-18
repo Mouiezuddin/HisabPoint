@@ -18,7 +18,15 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 
+from xml.sax.saxutils import escape as xml_escape
 from .utils import amount_to_words_inr
+
+
+def safe_p(val):
+    """Safely escapes XML entities (&, <, >) to prevent ReportLab ExpatError crashes."""
+    if val is None:
+        return ""
+    return xml_escape(str(val))
 
 
 def _format_inr(val):
@@ -190,16 +198,16 @@ def generate_invoice_pdf(invoice, business_profile=None) -> bytes:
     doc_title_text = "TAX INVOICE" if is_tax_invoice else "RETAIL INVOICE / CASH MEMO"
 
     shop_info_elements = [
-        Paragraph(shop_name, style_shop_title),
+        Paragraph(safe_p(shop_name), style_shop_title),
     ]
     if owner_name:
-        shop_info_elements.append(Paragraph(f"<b>Prop:</b> {owner_name}", style_shop_meta))
+        shop_info_elements.append(Paragraph(f"<b>Prop:</b> {safe_p(owner_name)}", style_shop_meta))
     if address:
-        shop_info_elements.append(Paragraph(address, style_shop_meta))
+        shop_info_elements.append(Paragraph(safe_p(address), style_shop_meta))
     if phone:
-        shop_info_elements.append(Paragraph(f"<b>Phone:</b> +91 {phone}", style_shop_meta))
+        shop_info_elements.append(Paragraph(f"<b>Phone:</b> +91 {safe_p(phone)}", style_shop_meta))
     if gstin:
-        shop_info_elements.append(Paragraph(f"<b>GSTIN:</b> {gstin}", style_shop_meta))
+        shop_info_elements.append(Paragraph(f"<b>GSTIN:</b> {safe_p(gstin)}", style_shop_meta))
 
     header_table_data = [
         [
@@ -208,7 +216,7 @@ def generate_invoice_pdf(invoice, business_profile=None) -> bytes:
                 Paragraph(doc_title_text, style_doc_title),
                 Paragraph("Computer Generated Bill", style_doc_subtitle),
                 Spacer(1, 4),
-                Paragraph(f"<b>Invoice #:</b> {invoice.invoice_number}", style_doc_subtitle),
+                Paragraph(f"<b>Invoice #:</b> {safe_p(invoice.invoice_number)}", style_doc_subtitle),
             ]
         ]
     ]
@@ -229,14 +237,14 @@ def generate_invoice_pdf(invoice, business_profile=None) -> bytes:
     buyer_lines = [
         Paragraph("BILLED TO / BUYER DETAILS", style_meta_head),
         Spacer(1, 2),
-        Paragraph(invoice.customer_name, style_meta_bold),
+        Paragraph(safe_p(invoice.customer_name), style_meta_bold),
     ]
     if invoice.customer_phone:
-        buyer_lines.append(Paragraph(f"Phone: {invoice.customer_phone}", style_meta_text))
+        buyer_lines.append(Paragraph(f"Phone: {safe_p(invoice.customer_phone)}", style_meta_text))
     if getattr(invoice, "customer_address", None):
-        buyer_lines.append(Paragraph(invoice.customer_address, style_meta_text))
+        buyer_lines.append(Paragraph(safe_p(invoice.customer_address), style_meta_text))
     elif invoice.customer and invoice.customer.address:
-        buyer_lines.append(Paragraph(invoice.customer.address, style_meta_text))
+        buyer_lines.append(Paragraph(safe_p(invoice.customer.address), style_meta_text))
     else:
         buyer_lines.append(Paragraph("Counter Sale / Walk-in Customer", style_meta_text))
 
@@ -335,9 +343,9 @@ def generate_invoice_pdf(invoice, business_profile=None) -> bytes:
 
         items_table_data.append([
             Paragraph(str(idx + 1), style_td_center),
-            Paragraph(item.name, style_td),
-            Paragraph(qty_str, style_td_center),
-            Paragraph(unit_str, style_td_center),
+            Paragraph(safe_p(item.name), style_td),
+            Paragraph(safe_p(qty_str), style_td_center),
+            Paragraph(safe_p(unit_str), style_td_center),
             Paragraph(rate_str, style_td_right),
             Paragraph(amt_str, style_td_right_bold),
         ])
@@ -389,14 +397,14 @@ def generate_invoice_pdf(invoice, business_profile=None) -> bytes:
 
     left_summary_elements.extend([
         Paragraph("<b>Terms & Conditions:</b>", style_meta_head),
-        Paragraph(f"1. {invoice.terms or 'Goods once sold will not be taken back.'}", style_meta_text),
+        Paragraph(f"1. {safe_p(invoice.terms or 'Goods once sold will not be taken back.')}", style_meta_text),
         Paragraph("2. Subject to local jurisdiction. E. & O.E.", style_meta_text),
     ])
 
     if invoice.notes:
         left_summary_elements.extend([
             Spacer(1, 2),
-            Paragraph(f"<b>Note:</b> {invoice.notes}", style_meta_text),
+            Paragraph(f"<b>Note:</b> {safe_p(invoice.notes)}", style_meta_text),
         ])
 
     # Right side: Totals calculations
@@ -482,7 +490,7 @@ def generate_invoice_pdf(invoice, business_profile=None) -> bytes:
                 Paragraph("This is a computer generated invoice and requires no physical signature.", style_shop_meta),
             ],
             [
-                Paragraph(f"For <b>{shop_name}</b>", style_th_center),
+                Paragraph(f"For <b>{safe_p(shop_name)}</b>", style_th_center),
                 Spacer(1, 24),
                 Paragraph("__________________________", style_td_center),
                 Paragraph("Authorized Signatory", style_th_center),

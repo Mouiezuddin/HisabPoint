@@ -58,39 +58,28 @@ def api_root_view(request):
 
 def health_check_view(request):
     """API health check endpoint for monitoring and uptime probes.
-    Executes a lightweight query to keep Neon PostgreSQL compute instance warm 24/7.
-    Also ensures all pending database migrations are applied autonomously.
+    Executes a lightweight query to keep Neon PostgreSQL compute instance warm.
+    HP-SEC-06: Sanitizes error outputs to prevent infrastructure disclosure and avoids
+    executing blocking migrations during public HTTP request handling.
     """
+    import logging
     from django.http import JsonResponse
     from django.db import connection
-    from django.core.management import call_command
 
+    logger = logging.getLogger("django")
     db_status = "ok"
-    migration_status = "synced"
 
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1;")
     except Exception as e:
-        db_status = f"unreachable: {str(e)}"
-
-    # Autonomous check for missing production tables (e.g. suppliers)
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) FROM suppliers;")
-    except Exception:
-        # Table missing in production database; run migrate
-        try:
-            call_command("migrate", interactive=False)
-            migration_status = "migrated_successfully"
-        except Exception as mig_err:
-            migration_status = f"migration_failed: {str(mig_err)}"
+        logger.error(f"Health check database probe failed: {e}")
+        db_status = "unreachable"
 
     return JsonResponse({
         "status": "ok" if db_status == "ok" else "degraded",
         "database": db_status,
-        "migrations": migration_status,
         "service": "HisabPoint Digital Ledger API",
-        "version": "1.0.1"
+        "version": "1.0.2"
     })
 

@@ -19,12 +19,15 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from datetime import timedelta
 from django.utils import timezone
 from django.db import transaction
+from django.contrib.auth.hashers import make_password, check_password
 
 from .models import User, LoginAttempt
+from .tokens import PreAuthToken
 from customers.models import Customer
 from ledger.models import Transaction
 from businesses.models import BusinessProfile
 from billing.models import Invoice, InvoiceItem
+from suppliers.models import Supplier, SupplierTransaction
 from .serializers import (
     RegisterSerializer,
     UserProfileSerializer,
@@ -79,9 +82,11 @@ class EmailVerificationRateThrottle(UserRateThrottle):
 
 # ── Cookie Helper Functions ───────────────────────────────────────────────
 def set_jwt_cookies(response, access_token, refresh_token=None):
-    """Attach access and refresh tokens as HttpOnly, Secure, SameSite cookies."""
+    """Attach access and refresh tokens as HttpOnly, Secure, SameSite cookies.
+    SameSite=Lax prevents cross-site request forgery (CSRF) from arbitrary origins.
+    """
     secure = not settings.DEBUG
-    samesite = "None" if secure else "Lax"
+    samesite = "Lax"
 
     access_lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
     max_age_access = int(access_lifetime.total_seconds()) if access_lifetime else 900
@@ -114,7 +119,7 @@ def set_jwt_cookies(response, access_token, refresh_token=None):
 def clear_jwt_cookies(response):
     """Remove authentication cookies."""
     secure = not settings.DEBUG
-    samesite = "None" if secure else "Lax"
+    samesite = "Lax"
     response.delete_cookie("access_token", path="/", samesite=samesite)
     response.delete_cookie("refresh_token", path="/", samesite=samesite)
     return response
@@ -160,7 +165,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         raw_email = request.data.get("email", "")
         email = raw_email.strip().lower() if isinstance(raw_email, str) else ""
         ip = get_client_ip(request)
-        identifier = f"email:{email}" if email else f"ip:{ip}"
+        # Composite identifier prevents malicious users from locking out legitimate accounts globally
+        identifier = f"login:{email}:{ip}" if email else f"ip:{ip}"
 
         now = timezone.now()
         attempt = LoginAttempt.objects.filter(identifier=identifier).first()
@@ -228,14 +234,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         user = serializer.user
 
         # If user has 2FA enabled, issue a temporary pre-auth challenge token
+        # HP-SEC-01: Must use PreAuthToken so token cannot access standard API endpoints
         if user.is_2fa_enabled:
-            pre_auth_token = cast(RefreshToken, RefreshToken.for_user(user))
-            pre_auth_token["2fa_pending"] = True
+            pre_auth_token = PreAuthToken.for_user(user)
             return Response(
                 {
                     "message": "2FA verification required.",
                     "2fa_required": True,
-                    "pre_auth_token": str(pre_auth_token.access_token),
+                    "pre_auth_token": str(pre_auth_token),
                 },
                 status=status.HTTP_200_OK,
             )
@@ -426,14 +432,15 @@ def confirm_2fa_view(request):
     if not verify_totp_token(user.totp_secret, code):
         return Response({"message": "Invalid 2FA code."}, status=status.HTTP_400_BAD_REQUEST)
 
-    recovery_codes = generate_recovery_codes(8)
+    # HP-SEC-03: Store recovery codes hashed in the database
+    plain_recovery_codes = generate_recovery_codes(8)
     user.is_2fa_enabled = True
-    user.recovery_codes = recovery_codes
+    user.recovery_codes = [make_password(code) for code in plain_recovery_codes]
     user.save(update_fields=["is_2fa_enabled", "recovery_codes"])
 
     return Response({
         "message": "2FA enabled successfully.",
-        "recovery_codes": recovery_codes,
+        "recovery_codes": plain_recovery_codes,
     })
 
 
@@ -449,7 +456,8 @@ def verify_2fa_view(request):
         return Response({"message": "pre_auth_token and code are required."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        validated_token = AccessToken(pre_auth_token)
+        # HP-SEC-01: Validate cryptographic PreAuthToken
+        validated_token = PreAuthToken(pre_auth_token)
         user_id = validated_token["user_id"]
         user = User.objects.get(pk=user_id)
     except Exception:
@@ -457,11 +465,14 @@ def verify_2fa_view(request):
 
     is_valid = verify_totp_token(user.totp_secret, code)
 
-    # Check recovery code fallback
-    if not is_valid and code in user.recovery_codes:
-        is_valid = True
-        user.recovery_codes.remove(code)
-        user.save(update_fields=["recovery_codes"])
+    # HP-SEC-03: Check hashed recovery codes (with backward compatibility)
+    if not is_valid and user.recovery_codes:
+        for stored_code in list(user.recovery_codes):
+            if (stored_code.startswith("pbkdf2_") and check_password(code, stored_code)) or stored_code == code:
+                is_valid = True
+                user.recovery_codes.remove(stored_code)
+                user.save(update_fields=["recovery_codes"])
+                break
 
     if not is_valid:
         return Response({"message": "Invalid 2FA code or recovery code."}, status=status.HTTP_400_BAD_REQUEST)
@@ -785,6 +796,11 @@ def delete_account_view(request):
 
         # 6. Delete customers
         Customer.objects.filter(user=user).delete()
+
+        # 6b. Delete suppliers and supplier transactions (HP-SEC-08: DPDP complete erasure & prevent ProtectedError)
+        SupplierTransaction.objects.filter(supplier__user=user).delete()
+        SupplierTransaction.objects.filter(created_by=user).delete()
+        Supplier.objects.filter(user=user).delete()
 
         # 7. Delete business profile
         BusinessProfile.objects.filter(user=user).delete()
