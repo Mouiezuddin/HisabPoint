@@ -9,7 +9,7 @@ import dj_database_url
 # Allowed hosts - support custom domains, Render subdomains (.onrender.com), and localhost
 raw_allowed_hosts = config(
     "ALLOWED_HOSTS",
-    default="hisabpoint.onrender.com,.onrender.com,localhost,127.0.0.1",
+    default="hisabpoint-c6po.onrender.com,.onrender.com,hisabpoint.onrender.com,localhost,127.0.0.1",
 )
 ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(",") if h.strip()]
 if ".onrender.com" not in ALLOWED_HOSTS:
